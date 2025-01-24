@@ -3,6 +3,7 @@ using System.Text;
 using Terraria;
 using TShockAPI;
 using TShockAPI.DB;
+using static MonoMod.InlineRT.MonoModRule;
 using static RoleSelection.Configuration;
 using static RoleSelection.RoleSelection;
 
@@ -14,10 +15,16 @@ public class Commands
     public static void RoleCMD(CommandArgs args)
     {
         var plr = args.Player;
-        var data = DB.GetData(plr.Account.ID); //获取玩家自己的数据
+        var data = DB.GetData(plr.Name); //获取玩家自己的数据
 
         //子命令数量为0时
         if (args.Parameters.Count == 0) Help(plr, data);
+
+        // 如果参数列表中只有一个元素，并且它可以被解析为整数，则认为它是索引并插入 "rank" 子命令
+        if (args.Parameters.Count == 1 && int.TryParse(args.Parameters[0], out _))
+        {
+            args.Parameters.Insert(0, "rank"); // 在参数列表开头插入 "rank" 子命令
+        }
 
         //子命令数量超过1个时
         if (args.Parameters.Count >= 1)
@@ -56,7 +63,8 @@ public class Commands
                         }
                         else
                         {
-                            plr.SendMessage("使用方法: /role up <索引|角色名>", 240, 250, 150);
+                            plr.SendMessage("使用方法: /role up <序号|角色名>", 240, 250, 150);
+                            plr.SendMessage("或者: /rl 序号", 240, 250, 150);
                         }
                     }
                     break;
@@ -88,14 +96,19 @@ public class Commands
                                 }
 
                                 // 收集所有物品信息到一个字符串中
-                                var InvText = role.Inventory != null ? string.Join(" ", role.Inventory.Select(item => GetItemsString(item))) : "";
-                                var AmoText = role.Armor != null ? string.Join(" ", role.Armor.Select(item => GetItemsString(item))) : "";
+                                var InvText = role.inventory != null ?
+                                    string.Join(" ", role.inventory.Select(item => Utils.GetItemsString(item))) : "";
 
-                                InvText = Format(InvText, 30);
-                                AmoText = Format(AmoText, 30);
+                                var AmoText = role.armor != null ?
+                                    string.Join(" ", role.armor.Select(item => Utils.GetItemsString(item))) : "";
+
+                                InvText = Utils.Format(InvText, 30);
+                                AmoText = Utils.Format(AmoText, 30);
 
                                 // 发送带有索引的消息
-                                plr.SendMessage($"\n[c/73E45C:{index}].角色:[c/5AE0D5:{role.Role}] 生命:[c/F7636F:{role.MaxHealth}] 魔力:[c/5A9DE0:{role.MaxMana}]\n" +
+                                plr.SendMessage($"\n[c/73E45C:{index}].角色:[c/5AE0D5:{role.Role}] " +
+                                                $"生命:[c/F7636F:{role.maxHealth}] " +
+                                                $"魔力:[c/5A9DE0:{role.maxMana}]\n" +
                                                 $"buff: [c/FF9567:{buff}]\n" +
                                                 $"装备: {AmoText}\n" +
                                                 $"物品: {InvText}", 240, 250, 150);
@@ -120,18 +133,18 @@ public class Commands
                             }
                             else
                             {
-                                var NewData = new MyData()
+                                var NewData = new CData()
                                 {
                                     Role = name,
-                                    MaxHealth = 100,
-                                    MaxMana = 20,
+                                    maxHealth = TShock.ServerSideCharacterConfig.Settings.StartingHealth,
+                                    maxMana = TShock.ServerSideCharacterConfig.Settings.StartingMana,
                                     Buff = new Dictionary<int, int>(),
-                                    Armor = new List<NetItem>(),
-                                    Inventory = new List<NetItem>(),
+                                    armor = new NetItem[] { },
+                                    inventory = TShock.ServerSideCharacterConfig.Settings.StartingInventory.ToArray()
                                 };
 
-                                Parse(args.Parameters, out var val, 2);
-                                UpdatePT(NewData, val);
+                                Utils.Parse(args.Parameters, out var val, 2);
+                                Utils.UpdatePT(NewData, val);
                                 Config.MyDataList.Add(NewData);
                                 Config.Write();
                             }
@@ -139,6 +152,50 @@ public class Commands
                         else
                         {
                             plr.SendMessage("使用方法: /role add 角色名 生命 400 魔力 200", 240, 250, 150);
+                        }
+                    }
+                    break;
+
+                case "s":
+                case "set":
+                case "设置":
+                case "修改":
+                    if (plr.HasPermission("role.admin"))
+                    {
+                        if (args.Parameters.Count >= 3)
+                        {
+                            var other = TShock.UserAccounts.GetUserAccountByName(args.Parameters[1]);
+                            var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Account.ID == other.ID);
+                            if (plr2 == null) return;
+                            var data2 = DB.GetData(other.Name);
+
+                            var isIndex = int.TryParse(args.Parameters[2], out var index);
+                            if (isIndex) // 如果参数是索引
+                            {
+                                // 确保索引有效且在范围内（考虑到用户可能从1开始计数）
+                                if (index > 0 && index <= Config.MyDataList.Count)
+                                {
+                                    var role = Config.MyDataList[index - 1];
+                                    Rank(plr2, data2, role);
+                                    plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
+                                }
+                            }
+                            else // 如果参数是职业名称
+                            {
+                                var name = args.Parameters[2].ToLower();
+                                foreach (var role in Config.MyDataList)
+                                {
+                                    if (role.Role.ToLower() != name) continue;
+
+                                    Rank(plr2, data2, role);
+                                    plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            plr.SendMessage("使用方法: /role set 玩家名 角色名", 240, 250, 150);
                         }
                     }
                     break;
@@ -155,24 +212,26 @@ public class Commands
 
                             if (isIndex) // 如果参数是索引
                             {
-                                if (index > 0 && index <= Config.MyDataList.Count)
-                                {
-                                    var role = Config.MyDataList[index - 1];
-                                    Config.MyDataList.RemoveAt(index - 1);
-                                    Config.Write();
-                                    plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
-                                }
+                                if (index <= 0 || index > Config.MyDataList.Count) break;
+
+                                var role = Config.MyDataList[index - 1];
+                                Config.MyDataList.RemoveAt(index - 1);
+                                Config.Write();
+                                DB.DelRole(role.Role);
+                                plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
+                                break;
                             }
                             else // 如果参数是职业名称
                             {
                                 var name = args.Parameters[1].ToLower();
-                                for (int i = 0; i < Config.MyDataList.Count; i++)
+                                for (var i = 0; i < Config.MyDataList.Count; i++)
                                 {
                                     if (Config.MyDataList[i].Role.ToLower() != name) continue;
 
                                     var role = Config.MyDataList[i];
                                     Config.MyDataList.RemoveAt(i);
                                     Config.Write();
+                                    DB.DelRole(role.Role);
                                     plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
                                     break;
                                 }
@@ -181,51 +240,6 @@ public class Commands
                         else
                         {
                             plr.SendMessage("使用方法: /role del <索引|角色名>", 240, 250, 150);
-                        }
-                    }
-                    break;
-
-                case "s":
-                case "set":
-                case "设置":
-                case "修改":
-                    if (plr.HasPermission("role.admin"))
-                    {
-                        if (args.Parameters.Count >= 3)
-                        {
-                            var other = TShock.UserAccounts.GetUserAccountByName(args.Parameters[1]);
-                            var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Account.ID == other.ID);
-                            var data2 = DB.GetData(other.ID);
-                            if (plr2 != null)
-                            {
-                                var isIndex = int.TryParse(args.Parameters[2], out var index);
-                                if (isIndex) // 如果参数是索引
-                                {
-                                    // 确保索引有效且在范围内（考虑到用户可能从1开始计数）
-                                    if (index > 0 && index <= Config.MyDataList.Count)
-                                    {
-                                        var role = Config.MyDataList[index - 1];
-                                        Rank(plr2, data2, role);
-                                        plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
-                                    }
-                                }
-                                else // 如果参数是职业名称
-                                {
-                                    var name = args.Parameters[2].ToLower();
-                                    foreach (var role in Config.MyDataList)
-                                    {
-                                        if (role.Role.ToLower() != name) continue;
-
-                                        Rank(plr2, data2, role);
-                                        plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            plr.SendMessage("使用方法: /role set 玩家名 角色名", 240, 250, 150);
                         }
                     }
                     break;
@@ -240,17 +254,16 @@ public class Commands
                         {
                             var other = TShock.UserAccounts.GetUserAccountByName(args.Parameters[1]);
                             var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Account.ID == other.ID);
-                            var data2 = DB.GetData(other.ID);
+                            var data2 = DB.GetData(other.Name);
                             if (data2 != null)
                             {
                                 if (plr2 != null)
                                 {
-                                    ClearItem(plr2); //清除所有物品
+                                    ClearAll(plr2); //清除所有物品
                                 }
                                 else
                                 {
-                                    var del = $"DELETE FROM tsCharacter WHERE AccountID = {other.ID};";
-                                    TShock.DB.Query(del);
+                                    TShock.DB.Query($"DELETE FROM tsCharacter WHERE AccountID = {other.ID};");
                                 }
 
                                 data2.Role = "无";
@@ -308,7 +321,7 @@ public class Commands
                             var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Account.ID == acc.ID);
                             if (plr2 != null)
                             {
-                                ClearItem(plr2); //清除所有物品
+                                ClearAll(plr2); //清除所有物品
                                 plr2.SendMessage("您的角色已被重置，请重进服务器", 240, 250, 150);
                             }
                         }
@@ -328,7 +341,7 @@ public class Commands
     #endregion
 
     #region 菜单指令方法
-    private static void Help(TSPlayer plr, MyPlayerData? data)
+    private static void Help(TSPlayer plr, DBData? data)
     {
         if (plr.HasPermission("role.admin"))
         {
@@ -357,244 +370,4 @@ public class Commands
     }
     #endregion
 
-    #region 升级方法
-    private static void Rank(TSPlayer plr, MyPlayerData? data, Configuration.MyData role)
-    {
-        if (data == null) return;
-        if (role.Role == "无") return;
-
-        SetItem(plr, role);
-        UpdateStats(plr, role);
-
-        DB.UpdateTShockDB(plr.Account.ID, plr.PlayerData);
-        plr.SendMessage($"您已选角为 {role.Role}", 240, 250, 150);
-
-        data.Role = role.Role;
-        DB.UpdateData(data);
-        plr.SendData(PacketTypes.PlayerSlot, "", plr.Index);
-    }
-    #endregion
-
-    #region 更新玩家属性方法
-    private static void UpdateStats(TSPlayer plr, Configuration.MyData role)
-    {
-        var tplr = plr.TPlayer;
-
-        //设置玩家生命上限
-        tplr.statLife = role.MaxHealth;
-        tplr.statLifeMax = role.MaxHealth;
-        plr.SendData(PacketTypes.PlayerHp, "", plr.Index);
-
-        //设置玩家魔力上限
-        tplr.statMana = role.MaxMana;
-        tplr.statManaMax = role.MaxMana;
-        plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
-
-        //设置指定BUFF
-        SetBuff(plr);
-    }
-    #endregion
-
-    #region 获取物品的图标
-    public static string GetItemsString(NetItem item)
-    {
-        if (item.NetId == 0) return "";
-        else return item.PrefixId != 0 ? $"[i/p{item.PrefixId}:{item.NetId}] " : $"[i/s{item.Stack}:{item.NetId}] ";
-    }
-    #endregion
-
-    #region 给出一个字符串和每行几个物品数，返回排列好的字符串，按空格进行分割
-    public static string Format(string str, int num)
-    {
-        if (string.IsNullOrWhiteSpace(str))
-        {
-            return "";
-        }
-
-        // 移除多余的空格并分割字符串为单词列表
-        var words = str.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-
-        // 如果需要每行显示的物品数大于等于单词总数，则直接返回原字符串
-        if (num >= words.Count)
-        {
-            return string.Join(" ", words);
-        }
-
-        var list = new List<string>();
-        for (int i = 0; i < words.Count; i++)
-        {
-            list.Add(words[i]);
-
-            // 每满一行就添加换行符，但不要在最后一行之后添加
-            if ((i + 1) % num == 0 && i < words.Count - 1)
-            {
-                list.Add("\n");
-            }
-            else if (i < words.Count - 1) // 非换行处添加空格分隔符，但不要在最后一个元素后添加
-            {
-                list.Add(" ");
-            }
-        }
-
-        return string.Join("", list);
-    }
-    #endregion
-
-    #region 更新所有物品方法
-    private static void SetItem(TSPlayer plr, Configuration.MyData role)
-    {
-        var tplr = plr.TPlayer;
-        if (tplr.inventory != null)
-        {
-            //清除所有物品
-            ClearItem(plr);
-
-            //设置背包物品
-            if (role.Inventory != null)
-            {
-                for (var i = 0; i < Math.Min(role.Inventory.Count, NetItem.MaxInventory); i++)
-                {
-                    var inv = role.Inventory[i];
-                    if (inv.NetId != 0)
-                    {
-                        tplr.inventory[i] = TShock.Utils.GetItemById(inv.NetId);
-                        tplr.inventory[i].stack = inv.Stack;
-                        tplr.inventory[i].prefix = inv.PrefixId;
-                        plr.SendData(PacketTypes.PlayerSlot, "", plr.Index, i);
-                    }
-                }
-            }
-
-            // 设置盔甲与饰品
-            if (role.Armor != null)
-            {
-                for (var i = 0; i < Math.Min(role.Armor.Count, NetItem.MaxInventory); i++)
-                {
-                    var armor = role.Armor[i];
-                    if (armor.NetId != 0)
-                    {
-                        tplr.armor[i] = TShock.Utils.GetItemById(armor.NetId);
-                        tplr.armor[i].stack = armor.Stack;
-                        tplr.armor[i].prefix = armor.PrefixId;
-                        plr.SendData(PacketTypes.PlayerSlot, "", plr.Index, i + NetItem.ArmorIndex.Item1);
-                    }
-                }
-            }
-        }
-    }
-    #endregion
-
-    #region 清除所有物品(从ZhiPlayerManager抄来的)
-    private static void ClearItem(TSPlayer plr)
-    {
-        var tplr = plr.TPlayer;
-
-        for (var i = 0; i < NetItem.MaxInventory; i++)
-        {
-            // 清理主物品栏、盔甲栏和其他装备栏
-            ClearSlots(tplr.inventory);
-            ClearSlots(tplr.armor);
-            ClearSlots(tplr.dye);
-            ClearSlots(tplr.miscEquips);
-            ClearSlots(tplr.miscDyes);
-            ClearSlots(tplr.bank.item);
-            ClearSlots(tplr.bank2.item);
-            ClearSlots(tplr.bank3.item);
-            ClearSlots(tplr.bank4.item);
-            tplr.trashItem.TurnToAir();
-
-            // 清理存档栏位
-            foreach (var loadout in tplr.Loadouts)
-            {
-                ClearSlots(loadout.Armor);
-                ClearSlots(loadout.Dye);
-            }
-
-            //清空所有物品
-            plr.SendData(PacketTypes.PlayerSlot, "", plr.Index, i);
-
-            //还原玩家生命上限
-            tplr.statLife = tplr.statLifeMax = TShock.ServerSideCharacterConfig.Settings.StartingHealth;
-            plr.SendData(PacketTypes.PlayerHp, "", plr.Index);
-
-            //还原玩家魔力上限
-            tplr.statMana = tplr.statManaMax = TShock.ServerSideCharacterConfig.Settings.StartingMana;
-            plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
-
-            //关闭所有被动永久增益
-            tplr.unlockedBiomeTorches = tplr.extraAccessory =
-            tplr.ateArtisanBread = tplr.usedAegisCrystal =
-            tplr.usedAegisFruit = tplr.usedArcaneCrystal =
-            tplr.usedGalaxyPearl = tplr.usedGummyWorm =
-            tplr.usedAmbrosia = tplr.unlockedSuperCart = false;
-            plr.SendData(PacketTypes.PlayerInfo, "", plr.Index, 0f, 0f, 0f, 0);
-
-            // 清空玩家所有BUFF
-            Array.Clear(tplr.buffType, 0, tplr.buffType.Length);
-            plr.SendData(PacketTypes.PlayerBuff, "", plr.Index);
-        }
-    }
-
-    private static void ClearSlots(Item[] items)
-    {
-        if (items == null) return;
-        foreach (var item in items)
-        {
-            // 如果是钱币则跳过
-            if (!Config.IsACoin && item.IsACoin) continue;
-
-            item.TurnToAir();
-        }
-    }
-    #endregion
-
-    #region 解析输入参数的距离 如:lf 100
-    private static void Parse(List<string> part, out Dictionary<string, string> val, int Index)
-    {
-        val = new Dictionary<string, string>();
-        for (int i = Index; i < part.Count; i += 2)
-        {
-            if (i + 1 < part.Count) // 确保有下一个参数
-            {
-                string propertyName = part[i].ToLower();
-                string value = part[i + 1];
-                val[propertyName] = value;
-            }
-        }
-    }
-    #endregion
-
-    #region 解析输入参数的属性名 通用方法 如:lf = 生命
-    private static void UpdatePT(MyData newItem, Dictionary<string, string> itemVal)
-    {
-        var mess = new StringBuilder();
-        mess.Append($"已添加新角色: {newItem.Role} ");
-        foreach (var kvp in itemVal)
-        {
-            string propName;
-            switch (kvp.Key.ToLower())
-            {
-                case "lf":
-                case "life":
-                case "生命":
-                    if (int.TryParse(kvp.Value, out var lf)) newItem.MaxHealth = lf;
-                    propName = "生命";
-                    break;
-
-                case "ma":
-                case "mana":
-                case "魔力":
-                    if (int.TryParse(kvp.Value, out var ma)) newItem.MaxMana = ma;
-                    propName = "魔力";
-                    break;
-                default:
-                    propName = kvp.Key;
-                    break;
-            }
-            mess.AppendFormat("[c/94D3E4:{0}]([c/94D6E4:{1}]):[c/FF6975:{2}] ", propName, kvp.Key, kvp.Value);
-        }
-
-        TShock.Utils.Broadcast($"{mess}", 240, 250, 150);
-    }
-    #endregion
 }

@@ -7,6 +7,15 @@
 ## Update Log
 
 ```
+v1.0.1
+Fixed the bug where characters had no equipment when selected.
+Fixed the bug where setting buffs would apply to all characters.
+Using /rl <number> now directly executes /rl up <number>.
+Using /rl del <character> will delete player data associated with that character.
+Added a `clear inventory on join` configuration option.
+Default configuration now includes preset data for four classes.
+When `clear inventory on join` is not enabled, players without data will default to the "Newbie" character.
+
 v1.0.0
 Use the /rl command to select character saves.
 A small plugin improved for SAP, mainly for PVP servers.
@@ -17,55 +26,56 @@ A small plugin improved for SAP, mainly for PVP servers.
 | Syntax                             | Alias  |       Permission       |                   Description                   |
 | -------------------------------- | :---: | :--------------: | :--------------------------------------: |
 | /rl  | None |   role.use    |    Command menu    |
-| /rl up <character name/number> | None |   role.use    |    Select character    |
-| /rl list | None |   role.use    |    List existing characters    |
-| /rl all | None |   role.use    |    List other players' characters    |
-| /rl set <player name> <character name> | None |   role.admin    |    Modify specified player's character    |
-| /rl add <character name> | None |   role.admin    |    Add character    |
-| /rl del <character name> | None |   role.admin    |    Remove character    |
-| /rl rm <player name> | None |   role.admin    |    Remove specified player's data    |
-| /rl reset | None |   role.admin    |    Clear all player data    |
+| /rl up <role/number> | /rl <number> |   role.use    |    Select character    |
+| /rl list | /rl l |   role.use    |    List existing characters    |
+| /rl all | /rl al |   role.use    |    List other players' characters    |
+| /rl set <player name> <role> | /rl s |   role.admin    |    Modify specified player's character    |
+| /rl add <role> | /rl a |   role.admin    |    Add character    |
+| /rl del <role> | /rl d |   role.admin    |    Remove character    |
+| /rl rm <player name> | /rl r |   role.admin    |    Remove specified player's data    |
+| /rl reset | /rl rs |   role.admin    |    Clear all player data    |
 | /reload  | None |   tshock.cfg.reload    |    Reload configuration file    |
 
 ## Configuration
 > Configuration file location： tshock/角色选择系统.json
 ```json
 {
-  "Plugin Enabled": true,
-  "Clear Coins": false,
-  "Character Table": [
+  "PluginEnabled": true,
+  "ClearCoins": false,
+  "ClearInventoryOnJoin": false,
+  "CharacterList": [
     {
-      "Character Name": "Warrior",
-      "Health Points": 400,
-      "Mana Points": 200,
-      "Buffs": {
-        "25": -1
+      "CharacterName": "Newbie",
+      "Health": 100,
+      "Mana": 20,
+      "Buff": {
+        "11": -1
       },
-      "Armor and Accessories": [
+      "ArmorAccessoryList": [],
+      "InventoryList": [
         {
-          "netID": 231,
+          "netID": -15,
           "prefix": 0,
           "stack": 1
         },
         {
-          "netID": 232,
+          "netID": -13,
           "prefix": 0,
           "stack": 1
         },
         {
-          "netID": 233,
+          "netID": -16,
           "prefix": 0,
           "stack": 1
-        }
-      ],
-      "Inventory": [
+        },
         {
-          "netID": 273,
-          "prefix": 81,
-          "stack": 1
+          "netID": 9,
+          "prefix": 0,
+          "stack": 500
         }
       ]
-    }
+    },
+    // ... (other character presets)
   ]
 }
 ```

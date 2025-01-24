@@ -11,53 +11,122 @@ namespace RoleSelection
 
         [JsonProperty("清理钱币", Order = 1)]
         public bool IsACoin { get; set; } = false;
+        [JsonProperty("进服清背包", Order = 2)]
+        public bool JoinClearItem { get; set; } = false;
 
-        [JsonProperty("角色表", Order = 2)]
-        public List<MyData> MyDataList { get; set; } = new List<MyData>();
+        [JsonProperty("角色表", Order = 3)]
+        public List<CData> MyDataList { get; set; } = new List<CData>();
         #endregion
 
         #region 角色数据结构
-        public class MyData
+        public class CData
         {
             [JsonProperty("角色名", Order = 1)]
             public string Role { get; set; } = "";
             [JsonProperty("生命值", Order = 2)]
-            public int MaxHealth { get; set; } = 100;
+            public int maxHealth { get; set; } = 100;
             [JsonProperty("魔力值", Order = 3)]
-            public int MaxMana { get; set; } = 20;
+            public int maxMana { get; set; } = 20;
             [JsonProperty("Buff", Order = 4)]
             public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
             [JsonProperty("盔甲饰品表", Order = 5)]
-            public List<NetItem>? Armor { get; internal set; }
+            public NetItem[] armor { get; internal set; } = new NetItem[] { };
             [JsonProperty("背包表", Order = 6)]
-            public List<NetItem>? Inventory { get; internal set; }
-        } 
+            public NetItem[] inventory { get; internal set; } = TShock.ServerSideCharacterConfig.Settings.StartingInventory.ToArray();
+        }
         #endregion
 
         #region 预设参数方法
         public void SetDefault()
         {
-            MyDataList = new List<MyData>()
+            MyDataList = new List<CData>()
             {
-                new MyData()
+                new CData()
+                {
+                    Role = "萌新",
+                    maxHealth = TShock.ServerSideCharacterConfig.Settings.StartingHealth,
+                    maxMana = TShock.ServerSideCharacterConfig.Settings.StartingMana,
+                    Buff = new Dictionary<int, int>(){ { 11, -1 } },
+                    inventory = TShock.ServerSideCharacterConfig.Settings.StartingInventory.ToArray(),
+                },
+
+                new CData()
                 {
                     Role = "战士",
-                    MaxHealth = 400,
-                    MaxMana = 200,
+                    maxHealth = 400,
+                    maxMana = 200,
                     Buff = new Dictionary<int, int>(){ { 25,-1 } },
-                    Armor = new List<NetItem>()
+                    armor = new[]
                     {
-                        //熔岩套
-                        new NetItem(231, 1, 0), 
-                        new NetItem(232, 1, 0), 
-                        new NetItem(233, 1, 0), 
+                        new NetItem(3187, 1, 0),
+                        new NetItem(3188, 1, 0),
+                        new NetItem(3189, 1, 0),
                     },
 
-                    Inventory = new List<NetItem>()
+                    inventory = new[]
                     {
-                        new NetItem(273, 1, 81), //永夜
+                        new NetItem(65, 1, 81),
                     }
-                }
+                },
+
+                new CData()
+                {
+                    Role = "射手",
+                    maxHealth = 400,
+                    maxMana = 20,
+                    Buff = new Dictionary<int, int>(){ { 112, -1 } },
+                    armor = new[]
+                    {
+                        new NetItem(3374, 1, 0),
+                        new NetItem(3375, 1, 0),
+                        new NetItem(3376, 1, 0),
+                    },
+
+                    inventory = new[]
+                    {
+                        new NetItem(964, 1, 82),
+                        new NetItem(1349, 9999, 0),
+                    }
+                },
+
+                new CData()
+                {
+                    Role = "法师",
+                    maxHealth = 400,
+                    maxMana = 400,
+                    Buff = new Dictionary<int, int>(){ { 6, -1 } },
+                    armor = new[]
+                    {
+                        new NetItem(228, 1, 0),
+                        new NetItem(229, 1, 0),
+                        new NetItem(230, 1, 0),
+                    },
+
+                    inventory = new[]
+                    {
+                        new NetItem(4062, 1, 83),
+                    }
+                },
+
+                new CData()
+                {
+                    Role = "召唤",
+                    maxHealth = 400,
+                    maxMana = 200,
+                    Buff = new Dictionary<int, int>(){ { 110, -1 } },
+                    armor = new[]
+                    {
+                        new NetItem(238, 1, 0),
+                        new NetItem(5068, 1, 0),
+                        new NetItem(5001, 1, 0),
+                    },
+
+                    inventory = new[]
+                    {
+                        new NetItem(4913, 1, 81),
+                        new NetItem(4273, 1, 83),
+                    }
+                },
             };
         }
         #endregion

@@ -1,26 +1,30 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\",
+  "WorkspaceRootPath": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
       "RelativeMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|solutionrelative:readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|Plugin.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\commands.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|Plugin.csproj|solutionrelative:commands.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\roleselection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\roleselection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|solutionrelative:roleselection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\configuration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\configuration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|solutionrelative:configuration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\database.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\database.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|solutionrelative:database.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\commands.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|solutionrelative:commands.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|d:\\\u6E38\u620F\\terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\utils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0EC057F9-C96B-4A85-ACA2-2DFDE9875E4D}|RoleSelection.csproj|solutionrelative:utils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,92 +34,88 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 1,
           "Children": [
             {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Configuration.cs",
-              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\Configuration.cs",
-              "RelativeDocumentMoniker": "Configuration.cs",
-              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\Configuration.cs",
-              "RelativeToolTip": "Configuration.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEYAAAAJAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-21T22:15:51.616Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "RoleSelection.cs",
-              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\RoleSelection.cs",
-              "RelativeDocumentMoniker": "RoleSelection.cs",
-              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\RoleSelection.cs",
-              "RelativeToolTip": "RoleSelection.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAqAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-21T22:08:34.51Z",
-              "EditorCaption": ""
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "README.md",
-              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\README.md",
+              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\README.md",
               "RelativeDocumentMoniker": "README.md",
-              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\README.md",
+              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\README.md",
               "RelativeToolTip": "README.md",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAACcAAAAAAAAAAAAAAD4AAAAKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2025-01-21T22:07:21.398Z",
+              "WhenOpened": "2025-01-24T18:31:07.832Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Utils.cs",
+              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Utils.cs",
+              "RelativeDocumentMoniker": "Utils.cs",
+              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Utils.cs",
+              "RelativeToolTip": "Utils.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-24T16:52:51.543Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 4,
-              "Title": "Database.cs",
-              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\Database.cs",
-              "RelativeDocumentMoniker": "Database.cs",
-              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\Database.cs",
-              "RelativeToolTip": "Database.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAA3AAAAAAAAAA==",
+              "Title": "Commands.cs",
+              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Commands.cs",
+              "RelativeDocumentMoniker": "Commands.cs",
+              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Commands.cs",
+              "RelativeToolTip": "Commands.cs",
+              "ViewState": "AgIAANUAAAAAAAAAAAAAAB8AAAAxAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-21T20:23:09.826Z",
+              "WhenOpened": "2025-01-24T16:26:55.844Z",
               "EditorCaption": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "Orientation": 0,
-      "VerticalTabListWidth": 256,
-      "FloatingWindowState": {
-        "Id": "47505f90-a389-4e7c-aafe-0431680ed25f",
-        "Display": 0,
-        "X": 848,
-        "Y": 134,
-        "Width": 1268,
-        "Height": 810,
-        "WindowState": 0
-      },
-      "DocumentGroups": [
-        {
-          "DockedWidth": 200,
-          "SelectedChildIndex": 0,
-          "Children": [
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Configuration.cs",
+              "DocumentMoniker": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Configuration.cs",
+              "RelativeDocumentMoniker": "Configuration.cs",
+              "ToolTip": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Configuration.cs",
+              "RelativeToolTip": "Configuration.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-22T01:23:29.625Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Database.cs",
+              "DocumentMoniker": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Database.cs",
+              "RelativeDocumentMoniker": "Database.cs",
+              "ToolTip": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\Database.cs",
+              "RelativeToolTip": "Database.cs",
+              "ViewState": "AgIAACcAAAAAAAAAAAAuwDYAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-22T01:23:18.658Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "Commands.cs",
-              "DocumentMoniker": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\Commands.cs",
-              "RelativeDocumentMoniker": "Commands.cs",
-              "ToolTip": "d:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\$\u3010\u7FBD\u5B66\u3011Tshock\u63D2\u4EF6\u7F16\u5199\u6A21\u7248\uFF08\u5E26\u6570\u636E\u5E93\u002B\u914D\u7F6E\u6587\u4EF6\uFF09\\Commands.cs",
-              "RelativeToolTip": "Commands.cs",
-              "ViewState": "AgIAAEIBAAAAAAAAAAAAAFYBAAAyAAAAAAAAAA==",
+              "Title": "RoleSelection.cs",
+              "DocumentMoniker": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\RoleSelection.cs",
+              "RelativeDocumentMoniker": "RoleSelection.cs",
+              "ToolTip": "D:\\\u6E38\u620F\\Terraria\\\u670D\u52A1\u5668\\\u63D2\u4EF6\u6E90\u7801\\\u3010\u6E90\u7801\u3011\u89D2\u8272\u9009\u62E9\u7CFB\u7EDF v1.0.0\\RoleSelection.cs",
+              "RelativeToolTip": "RoleSelection.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAP8AAAAwAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-21T13:47:50.323Z",
+              "WhenOpened": "2025-01-22T01:23:16.56Z",
               "EditorCaption": ""
             }
           ]

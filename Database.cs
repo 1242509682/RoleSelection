@@ -1,21 +1,22 @@
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using TShockAPI;
 using TShockAPI.DB;
 
 namespace RoleSelection;
 
-public class MyPlayerData
+public class DBData
+{
+    public string Name { get; set; } = ""; // 玩家名字
+    public string Role { get; set; } = "无"; // 角色名称
+    public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
+    public DBData(string name = "", string role = "无", Dictionary<int, int> buff = null!)
     {
-        public int Account { get; set; } // 玩家账号
-        public string Name { get; set; } = ""; // 玩家名字
-        public string Role { get; set; } = "无"; // 角色名称
-        public MyPlayerData(int acc, string name = "", string role = "无")
-        {
-            this.Account = acc;
-            this.Name = name ?? "";
-            this.Role = role ?? "无";
-        }
+        this.Name = name ?? "";
+        this.Role = role ?? "无";
+        this.Buff = buff ?? new Dictionary<int, int>();
     }
+}
 
 public class Database
 {
@@ -26,41 +27,56 @@ public class Database
         TableName = "RoleSelection";
         var sql = new SqlTableCreator(TShock.DB, new SqliteQueryCreator());
         sql.EnsureTableStructure(new SqlTable(TableName, //表名
-            new SqlColumn("ID", MySqlDbType.Int32) { Primary = true, Unique = true, AutoIncrement = true }, // 主键列
-            new SqlColumn("Account", MySqlDbType.Int32), // 非空字符串列
-            new SqlColumn("Name", MySqlDbType.TinyText) { NotNull = true }, // 非空字符串列
-            new SqlColumn("Role", MySqlDbType.TinyText) { NotNull = true }
+            new SqlColumn("Name", MySqlDbType.TinyText) 
+            { 
+                NotNull = true, Primary = true, Unique = true 
+            },
+            new SqlColumn("Role", MySqlDbType.TinyText) { NotNull = true },
+            new SqlColumn("Buff", MySqlDbType.Text)
         ));
     }
     #endregion
 
     #region 创建数据方法
-    public bool AddData(MyPlayerData data)
+    public bool AddData(DBData data)
     {
-        return TShock.DB.Query("INSERT INTO " + TableName + " (Account, Name, Role) VALUES (@0, @1, @2)",
-            data.Account, data.Name, data.Role) != 0;
+        var buff = JsonConvert.SerializeObject(data.Buff);
+        return TShock.DB.Query("INSERT INTO " + TableName + " (Name, Role, Buff) VALUES (@0, @1, @2)",
+        data.Name, data.Role, buff) != 0;
     }
     #endregion
 
     #region 更新数据方法
-    public bool UpdateData(MyPlayerData data)
+    public bool UpdateData(DBData data)
     {
-        return TShock.DB.Query("UPDATE " + TableName + " SET Role = @0 WHERE Account = @1",
-            data.Role, data.Account) != 0;
+        var buff = JsonConvert.SerializeObject(data.Buff);
+        return TShock.DB.Query("UPDATE " + TableName + " SET Role = @0, Buff = @1 WHERE Name = @2",
+            data.Role, buff, data.Name) != 0;
+    }
+    #endregion
+
+    #region 更新玩家强制开荒数据
+    public bool UpdateTShockDB(int acc, TShockAPI.PlayerData TSData)
+    {
+        if (TSData == null || !TSData.exists) return false;
+
+        return TShock.DB.Query(
+            "UPDATE tsCharacter SET Health = @0, MaxHealth = @1, Mana = @2, MaxMana = @3, Inventory = @4 WHERE Account = @5",
+            TSData.health, TSData.maxHealth, TSData.mana, TSData.maxMana, string.Join("~", TSData.inventory), acc) != 0;
     }
     #endregion
 
     #region 获取玩家数据
-    public MyPlayerData? GetData(int acc)
+    public DBData? GetData(string name)
     {
-        using var reader = TShock.DB.QueryReader("SELECT * FROM " + TableName + " WHERE Account = @0", acc);
+        using var reader = TShock.DB.QueryReader("SELECT * FROM " + TableName + " WHERE Name = @0", name);
 
         if (reader.Read())
         {
-            return new MyPlayerData(
-                acc: reader.Get<int>("Account"),
+            return new DBData(
                 name: reader.Get<string>("Name"),
-                role: reader.Get<string>("Role")
+                role: reader.Get<string>("Role"),
+                buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
             );
         }
 
@@ -69,17 +85,17 @@ public class Database
     #endregion
 
     #region 获取所有玩家数据
-    public List<MyPlayerData> GetAllData()
+    public List<DBData> GetAllData()
     {
-        var data = new List<MyPlayerData>();
+        var data = new List<DBData>();
         using (var reader = TShock.DB.QueryReader("SELECT * FROM " + TableName))
         {
             while (reader.Read())
             {
-                data.Add(new MyPlayerData(
-                    acc: reader.Get<int>("Account"),
+                data.Add(new DBData(
                     name: reader.Get<string>("Name"),
-                    role: reader.Get<string>("Role")
+                    role: reader.Get<string>("Role"),
+                    buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
                 ));
             }
         }
@@ -88,36 +104,15 @@ public class Database
     }
     #endregion
 
-    #region 更新玩家强制开荒数据
-    public bool UpdateTShockDB(int acc, TShockAPI.PlayerData TSData)
+    #region 删除指定数据方法
+    public bool DelPlayer(string name)
     {
-        if (TSData == null || !TSData.exists)
-        {
-            return false;
-        }
-        try
-        {
-            var data = TShock.CharacterDB.GetPlayerData(new TSPlayer(-1), acc);
-            if (data != null && data.exists)
-            {
-                TShock.DB.Query("UPDATE tsCharacter SET Health = @0, MaxHealth = @1, Mana = @2, MaxMana = @3, Inventory = @4 WHERE Account = @5;", new object[]
-                {
-                        TSData.health,
-                        TSData.maxHealth,
-                        TSData.mana,
-                        TSData.maxMana,
-                        string.Join<NetItem>("~", TSData.inventory),
-                        acc
-                });
-            }
-            return true;
-        }
-        catch (Exception ex)
-        {
-            TShock.Log.Error("错误：UpdateTShockDB " + ex.ToString());
-            Console.WriteLine("错误：UpdateTShockDB " + ex.ToString());
-            return false;
-        }
+        return TShock.DB.Query("DELETE FROM " + TableName + " WHERE Name = @0", name) != 0;
+    }
+
+    public bool DelRole(string role)
+    {
+        return TShock.DB.Query("DELETE FROM " + TableName + " WHERE Role = @0", role) != 0;
     }
     #endregion
 
