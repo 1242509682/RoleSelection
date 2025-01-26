@@ -174,7 +174,7 @@ internal class Utils
     }
     #endregion
 
-    #region Color 转换为 long（这个方法Tshock自带的）
+    #region Color 转换为 long（Tshock自带的是从color转int）
     public static long EncodeColor(Color color)
     {
         return ((long)color.A << 24) | ((long)color.R << 16) | ((long)color.G << 8) | color.B;

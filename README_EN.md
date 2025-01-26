@@ -7,6 +7,20 @@
 ## Update Log
 
 ```
+v1.0.3
+Optimized Performance: Improved the execution performance of the /rl up command.
+Bug Fixes:
+Fixed an occasional issue where rapid inputs of the up command would cause the previous role's data to overwrite the new role's data.
+Resolved a bug that required players to input the /rl up command twice to switch roles when they had no existing role.
+Addressed a bug where deleting a role did not clear the player's inventory.
+Fixed an issue where executing the delete command for a specified offline player failed.
+Configuration Changes:
+Removed the "First Set of Armor Accessories" configuration option.
+Removed the "Refresh Interval" configuration option.
+Added "Equipped Toolbar" and "Piggy Bank" configuration options to the roles table.
+Documentation Updates:
+Enhanced documentation for the /rl del and /rl rm commands to clarify their usage, especially in cases of empty input triggering.
+
 v1.0.2
 Added database storage logic and its corresponding command: /rl db
 When 'Data Storage' is enabled, you need to enter /rl number twice to normally change roles.
@@ -53,15 +67,14 @@ A small plugin improved for SAP, mainly for PVP servers.
 > Configuration file location： tshock/角色选择系统.json
 ```json
 {
-  "Plugin Enabled": true,
+  "Plugin Switch": true,
   "Clear Coins": false,
-  "Clean Inventory on Login": false,
-  "Item Table Exemption": [
+  "Clear Inventory on Join": false,
+  "Items Not to Clear": [
     71
   ],
   "Data Storage": true,
-  "Refresh Delay": 2000.0,
-  "Character Table": [
+  "Roles Table": [
     {
       "Role Name": "Newbie",
       "Health": 100,
@@ -70,10 +83,9 @@ A small plugin improved for SAP, mainly for PVP servers.
         "11": -1
       },
       "Current Armor Accessories": [],
-      "Armor Accessories Slot 1": [],
-      "Armor Accessories Slot 2": [],
-      "Armor Accessories Slot 3": [],
-      "Inventory": [
+      "Second Set of Armor Accessories": [],
+      "Third Set of Armor Accessories": [],
+      "Player Backpack": [
         {
           "netID": -15,
           "prefix": 0,
@@ -94,9 +106,52 @@ A small plugin improved for SAP, mainly for PVP servers.
           "prefix": 0,
           "stack": 500
         }
+      ],
+      "Piggy Bank": [],
+      "Equipped Toolbar": [
+        {
+          "netID": 5098,
+          "prefix": 0,
+          "stack": 1
+        }
       ]
     },
-    // ... (other character presets)
+    {
+      "Role Name": "Warrior",
+      "Health": 400,
+      "Mana": 200,
+      "Buff": {
+        "25": -1
+      },
+      "Current Armor Accessories": [
+        {
+          "netID": 3187,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 3188,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 3189,
+          "prefix": 0,
+          "stack": 1
+        }
+      ],
+      "Second Set of Armor Accessories": [],
+      "Third Set of Armor Accessories": [],
+      "Player Backpack": [
+        {
+          "netID": 65,
+          "prefix": 81,
+          "stack": 1
+        }
+      ],
+      "Piggy Bank": [],
+      "Equipped Toolbar": []
+    }
   ]
 }
 ```

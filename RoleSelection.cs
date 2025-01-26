@@ -13,7 +13,7 @@ public class RoleSelection : TerrariaPlugin
     #region 插件信息
     public override string Name => "角色选择系统";
     public override string Author => "SAP 羽学";
-    public override Version Version => new Version(1, 0, 2);
+    public override Version Version => new Version(1, 0, 3);
     public override string Description => "使用指令选择角色存档";
     #endregion
 
@@ -29,7 +29,6 @@ public class RoleSelection : TerrariaPlugin
     {
         LoadConfig();
         GeneralHooks.ReloadEvent += ReloadConfig;
-        GetDataHandlers.PlayerUpdate.Register(this.OnPlayerUpdate);
         GetDataHandlers.PlayerSpawn.Register(this.OnPlayerSpawn);
         ServerApi.Hooks.NetGreetPlayer.Register(this, this.OnGreetPlayer);
         TShockAPI.Commands.ChatCommands.Add(new Command("role.use", Commands.RoleCMD, "role", "class", "rl"));
@@ -40,7 +39,6 @@ public class RoleSelection : TerrariaPlugin
         if (disposing)
         {
             GeneralHooks.ReloadEvent -= ReloadConfig;
-            GetDataHandlers.PlayerUpdate.UnRegister(this.OnPlayerUpdate);
             GetDataHandlers.PlayerSpawn.UnRegister(this.OnPlayerSpawn);
             ServerApi.Hooks.NetGreetPlayer.Deregister(this, this.OnGreetPlayer);
             TShockAPI.Commands.ChatCommands.RemoveAll(x => x.CommandDelegate == Commands.RoleCMD);
@@ -87,8 +85,6 @@ public class RoleSelection : TerrariaPlugin
                 Name = plr.Name,
                 Role = "萌新",
                 Buff = new Dictionary<int, int>(),
-                Cooldown = false,
-                CoolTime = DateTime.UtcNow
             };
 
             DB.AddData(data); //添加新数据
@@ -119,11 +115,10 @@ public class RoleSelection : TerrariaPlugin
     {
         if (data == null || CData.Role == "无" || !plr.HasPermission("role.use")) return;
 
-        data.Buff = CData.Buff;
-
         if (!Config.UseDBSave)
         {
             data.Role = CData.Role;
+            data.Buff = CData.Buff;
             DB.UpdateData(data);
             ClearAll(plr); //清除所有
             SetAll(plr, CData); //设置所有
@@ -132,55 +127,37 @@ public class RoleSelection : TerrariaPlugin
         }
         else
         {
-            var data2 = DB.GetRoleData(plr, data.Role);
+            // 保存当前角色状态
+            if (!string.IsNullOrEmpty(data.Role))
+            {
+                DB.UpdateRoleDB(plr, data.Role);
+            }
+
+            var data2 = DB.GetRoleData(plr, CData.Role);
             if (data2 == null)
             {
-                ClearAll(plr); //清除所有
-                SetAll(plr, CData); //设置配置里的物品
+                // 如果是新角色，添加角色并设置所有属性
+                ClearAll(plr); // 清除所有
+                SetAll(plr, CData); // 设置配置里的物品
                 DB.AddRoleData(plr, CData.Role);
-                SetBuff(plr); //设置玩家BUFF
-                plr.SendMessage($"已添加角色 [c/F86570:{data.Role}]", 170, 170, 170);
+                plr.SendMessage($"已添加角色 [c/F86570:{CData.Role}]", 170, 170, 170);
             }
-            else if (!data2.Role.Contains(data.Role))
+            else
             {
-                ClearAll(plr); //清除所有
-                SetAll(plr, CData); //设置配置里的物品
-                DB.AddRoleData(plr, CData.Role);
-                SetBuff(plr); //设置玩家BUFF
-                plr.SendMessage($"已添加角色 [c/F86570:{data.Role}]", 170, 170, 170);
+                // 如果角色已经存在，仅更新数据并应用（如果需要）
+                if (data.Role != CData.Role)
+                {
+                    ClearAll(plr); // 清除所有
+                    SetAll(plr, data2); // 设置数据库里的物品
+                    plr.SendMessage($"已更换角色 [c/5B9DE1:{data2.Role}]", 170, 170, 170);
+                }
             }
-            else if (data.Role == data2.Role)
-            {
-                DB.UpdateRoleDB(plr, data2.Role);
-                plr.SendMessage($"已保存角色 [c/5B9DE1:{data2.Role}]", 170, 170, 170);
-                data.Role = CData.Role;
-                data.Cooldown = true;
-                DB.UpdateData(data);
-            }
-        }
-    }
-    #endregion
 
-    #region 延迟切换职业方法
-    private void OnPlayerUpdate(object? sender, GetDataHandlers.PlayerUpdateEventArgs e)
-    {
-        var plr = e.Player;
-        var data = DB.GetData(plr.Name);
-        if (plr == null || !plr.Active || !plr.IsLoggedIn ||
-           !plr.HasPermission("role.use") || data == null || !Config.Enabled) return;
-        var data2 = DB.GetRoleData(plr, data.Role);
-        if (data2 == null) return;
-
-        if (data.Cooldown && (DateTime.UtcNow - data.CoolTime).TotalMilliseconds >= Config.UpdateInterval)
-        {
-            ClearAll(plr); //清除所有
-            SetAll(plr, data2); //设置数据库里的物品
-            DB.UpdateRoleDB(plr, data2.Role);
-            plr.SendMessage($"已更换角色 [c/5BE1DA:{data2.Role}]", 170, 170, 170);
-            data.Cooldown = false;
-            data.CoolTime = DateTime.UtcNow;
+            // 更新玩家角色信息
+            data.Role = CData.Role;
+            data.Buff = CData.Buff;
             DB.UpdateData(data);
-            SetBuff(plr); //设置玩家BUFF
+            SetBuff(plr); // 设置玩家BUFF
         }
     }
     #endregion
@@ -226,16 +203,16 @@ public class RoleSelection : TerrariaPlugin
         var enabledSuperCart = false;
 
         // 初始化物品栏和盔甲栏
-        var netInv = Array.Empty<NetItem>();
-        var netArmor = Array.Empty<NetItem>();
-        var DyeIndex = Array.Empty<NetItem>();
-        var MiscEquipIndex = Array.Empty<NetItem>();
-        var MiscDyeIndex = Array.Empty<NetItem>();
+        var InventorySlots = Array.Empty<NetItem>();
+        var ArmorSlots = Array.Empty<NetItem>();
+        var DyeSlots = Array.Empty<NetItem>();
+        var MiscEquipSlots = Array.Empty<NetItem>();
+        var MiscDyeSlots = Array.Empty<NetItem>();
         var PiggySlots = Array.Empty<NetItem>();
         var SafeSlots = Array.Empty<NetItem>();
         var TrashIndex = Array.Empty<NetItem>();
-        var ForgeIndex = Array.Empty<NetItem>();
-        var VoidIndex = Array.Empty<NetItem>();
+        var ForgeSlots = Array.Empty<NetItem>();
+        var VoidSlots = Array.Empty<NetItem>();
         var loadout1Armor = Array.Empty<NetItem>();
         var Loadout1Dye = Array.Empty<NetItem>();
         var loadout2Armor = Array.Empty<NetItem>();
@@ -248,11 +225,13 @@ public class RoleSelection : TerrariaPlugin
         {
             maxHealth = my.maxHealth;
             maxMana = my.maxMana;
-            netInv = my.inventory ?? Array.Empty<NetItem>();
-            netArmor = my.armor ?? Array.Empty<NetItem>();
-            loadout1Armor = my.loadout1Armor ?? Array.Empty<NetItem>();
+            MiscEquipSlots =
+            InventorySlots = my.inventory ?? Array.Empty<NetItem>();
+            ArmorSlots = my.armor ?? Array.Empty<NetItem>();
             loadout2Armor = my.loadout2Armor ?? Array.Empty<NetItem>();
             loadout3Armor = my.loadout3Armor ?? Array.Empty<NetItem>();
+            PiggySlots = my.PiggySlots ?? Array.Empty<NetItem>();
+            MiscEquipSlots = my.MiscEquipSlots ?? Array.Empty<NetItem>();
         }
         else if (data is MyRoleData db)
         {
@@ -266,17 +245,17 @@ public class RoleSelection : TerrariaPlugin
             skinVariant = db.skinVariant;
             hair = db.hair;
             hairDye = db.hairDye;
-            netInv = Utils.StringToItem(db.Inventory);
-            netArmor = Utils.StringToItem2(db.Inventory, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
+            InventorySlots = Utils.StringToItem(db.Inventory);
+            ArmorSlots = Utils.StringToItem2(db.Inventory, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
 
-            DyeIndex = Utils.StringToItem2(db.Inventory, NetItem.DyeIndex.Item1, NetItem.DyeIndex.Item2);
-            MiscEquipIndex = Utils.StringToItem2(db.Inventory, NetItem.MiscEquipIndex.Item1, NetItem.MiscEquipIndex.Item2);
-            MiscDyeIndex = Utils.StringToItem2(db.Inventory, NetItem.MiscDyeIndex.Item1, NetItem.MiscDyeIndex.Item2);
+            DyeSlots = Utils.StringToItem2(db.Inventory, NetItem.DyeIndex.Item1, NetItem.DyeIndex.Item2);
+            MiscEquipSlots = Utils.StringToItem2(db.Inventory, NetItem.MiscEquipIndex.Item1, NetItem.MiscEquipIndex.Item2);
+            MiscDyeSlots = Utils.StringToItem2(db.Inventory, NetItem.MiscDyeIndex.Item1, NetItem.MiscDyeIndex.Item2);
             PiggySlots = Utils.StringToItem2(db.Inventory, NetItem.PiggyIndex.Item1, NetItem.PiggyIndex.Item2);
             SafeSlots = Utils.StringToItem2(db.Inventory, NetItem.SafeIndex.Item1, NetItem.SafeIndex.Item2);
             TrashIndex = Utils.StringToItem2(db.Inventory, NetItem.TrashIndex.Item1, NetItem.TrashIndex.Item2);
-            ForgeIndex = Utils.StringToItem2(db.Inventory, NetItem.ForgeIndex.Item1, NetItem.ForgeIndex.Item2);
-            VoidIndex = Utils.StringToItem2(db.Inventory, NetItem.VoidIndex.Item1, NetItem.VoidIndex.Item2);
+            ForgeSlots = Utils.StringToItem2(db.Inventory, NetItem.ForgeIndex.Item1, NetItem.ForgeIndex.Item2);
+            VoidSlots = Utils.StringToItem2(db.Inventory, NetItem.VoidIndex.Item1, NetItem.VoidIndex.Item2);
             loadout1Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout1Armor.Item1, NetItem.Loadout1Armor.Item2);
             Loadout1Dye = Utils.StringToItem2(db.Inventory, NetItem.Loadout1Dye.Item1, NetItem.Loadout1Dye.Item2);
             loadout2Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout2Armor.Item1, NetItem.Loadout2Armor.Item2);
@@ -346,15 +325,15 @@ public class RoleSelection : TerrariaPlugin
         tplr.enabledSuperCart = enabledSuperCart;
         plr.SendData(PacketTypes.PlayerInfo, "", plr.Index, 0f, 0f, 0f, 0);
 
-        SetItem(plr, tplr.inventory, netInv, NetItem.InventoryIndex.Item1, NetItem.InventorySlots);
-        SetItem(plr, tplr.armor, netArmor, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
-        SetItem(plr, tplr.dye, DyeIndex, NetItem.DyeIndex.Item1, NetItem.DyeSlots);
-        SetItem(plr, tplr.miscEquips, MiscEquipIndex, NetItem.MiscEquipIndex.Item1, NetItem.MiscEquipSlots);
-        SetItem(plr, tplr.miscDyes, MiscDyeIndex, NetItem.MiscDyeIndex.Item1, NetItem.MiscDyeSlots);
+        SetItem(plr, tplr.inventory, InventorySlots, NetItem.InventoryIndex.Item1, NetItem.InventorySlots);
+        SetItem(plr, tplr.armor, ArmorSlots, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
+        SetItem(plr, tplr.dye, DyeSlots, NetItem.DyeIndex.Item1, NetItem.DyeSlots);
+        SetItem(plr, tplr.miscEquips, MiscEquipSlots, NetItem.MiscEquipIndex.Item1, NetItem.MiscEquipSlots);
+        SetItem(plr, tplr.miscDyes, MiscDyeSlots, NetItem.MiscDyeIndex.Item1, NetItem.MiscDyeSlots);
         SetItem(plr, tplr.bank.item, PiggySlots, NetItem.PiggyIndex.Item1, NetItem.PiggySlots);
         SetItem(plr, tplr.bank2.item, SafeSlots, NetItem.SafeIndex.Item1, NetItem.SafeSlots);
-        SetItem(plr, tplr.bank3.item, ForgeIndex, NetItem.ForgeIndex.Item1, NetItem.ForgeSlots);
-        SetItem(plr, tplr.bank4.item, VoidIndex, NetItem.VoidIndex.Item1, NetItem.VoidSlots);
+        SetItem(plr, tplr.bank3.item, ForgeSlots, NetItem.ForgeIndex.Item1, NetItem.ForgeSlots);
+        SetItem(plr, tplr.bank4.item, VoidSlots, NetItem.VoidIndex.Item1, NetItem.VoidSlots);
         SetItem(plr, tplr.Loadouts[0].Armor, loadout1Armor, NetItem.Loadout1Armor.Item1, NetItem.LoadoutArmorSlots);
         SetItem(plr, tplr.Loadouts[0].Dye, Loadout1Dye, NetItem.Loadout1Dye.Item1, NetItem.LoadoutDyeSlots);
         SetItem(plr, tplr.Loadouts[1].Armor, loadout2Armor, NetItem.Loadout2Armor.Item1, NetItem.LoadoutArmorSlots);

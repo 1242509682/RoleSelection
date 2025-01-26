@@ -186,8 +186,8 @@ public class Commands
                                 foreach (var role in Config.MyDataList)
                                 {
                                     if (role.Role.ToLower() != name) continue;
-
                                     Rank(plr2, data2, role);
+
                                     plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
                                     break;
                                 }
@@ -195,7 +195,7 @@ public class Commands
                         }
                         else
                         {
-                            plr.SendMessage("使用方法: /role set 玩家名 角色名", 240, 250, 150);
+                            plr.SendMessage("使用方法: /rl s 玩家名 角色名", 240, 250, 150);
                         }
                     }
                     break;
@@ -215,6 +215,7 @@ public class Commands
                                 if (index <= 0 || index > Config.MyDataList.Count) break;
 
                                 var role = Config.MyDataList[index - 1];
+                                RestorePlayer(role); //删除角色时帮玩家回到萌新角色方法
                                 Config.MyDataList.RemoveAt(index - 1);
                                 Config.Write();
                                 DB.DelRole(role.Role);
@@ -227,12 +228,13 @@ public class Commands
                                 for (var i = 0; i < Config.MyDataList.Count; i++)
                                 {
                                     if (Config.MyDataList[i].Role.ToLower() != name) continue;
-
                                     var role = Config.MyDataList[i];
+                                    RestorePlayer(role); //删除角色时帮玩家回到萌新角色方法
                                     Config.MyDataList.RemoveAt(i);
                                     Config.Write();
                                     DB.DelRole(role.Role);
                                     plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
+
                                     break;
                                 }
                             }
@@ -240,6 +242,7 @@ public class Commands
                         else
                         {
                             plr.SendMessage("使用方法: /role del <索引|角色名>", 240, 250, 150);
+                            plr.SendMessage($"[c/F86470:注:]指令会使拥有该角色的玩家,恢复《角色表》里的第1个角色", 170, 170, 170);
                         }
                     }
                     break;
@@ -263,7 +266,7 @@ public class Commands
                                 }
                                 else
                                 {
-                                    TShock.DB.Query($"DELETE FROM tsCharacter WHERE AccountID = {other.ID};");
+                                    TShock.DB.Query($"DELETE FROM tsCharacter WHERE Account = {other.ID}");
                                 }
 
                                 DB.DelPlayer(other.Name);
@@ -272,6 +275,7 @@ public class Commands
                         else
                         {
                             plr.SendMessage("使用方法: /role rm 玩家名", 240, 250, 150);
+                            plr.SendMessage($"[c/F86470:注:]玩家如果不在线会清理他的SSC强制开荒数据", 170, 170, 170);
                         }
                     }
                     break;
@@ -376,16 +380,43 @@ public class Commands
 
         if (data != null)
         {
-            if (data.Cooldown)
-            {
-                plr.SendMessage($"[c/F86470:注:]首次转职需要[c/5B9EE1:输2遍]：[c/FF9567:/rl up {data.Role}]", 170, 170, 170);
-            }
-            else
-            {
-                plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
-            }
+            plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
         }
 
+    }
+    #endregion
+
+    #region 用于移除指定角色时帮玩家回到萌新背包方法
+    private static void RestorePlayer(MyData role)
+    {
+        var user = TShock.UserAccounts.GetUserAccounts();
+        foreach (var acc in user)
+        {
+            var cdata = Config.MyDataList.FirstOrDefault();
+            if (cdata == null) continue;
+
+            var data = DB.GetData(acc.Name);
+            if (data != null && data.Role == role.Role)
+            {
+                var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Name == acc.Name);
+                if (plr2 != null)
+                {
+                    plr2.SendMessage($"因[c/FFFFFF:{role.Role}]角色被管理员移除,已将您更换为:[c/5BE1DA:{cdata.Role}]", 170, 170, 170);
+                    ClearAll(plr2); //清除所有
+                    SetAll(plr2, cdata); //设置配置文件里的物品
+                    data.Role = cdata.Role;
+                    DB.UpdateData(data);
+                    SetBuff(plr2); //设置玩家BUFF
+                }
+                else
+                {
+                    TShock.DB.Query($"DELETE FROM tsCharacter WHERE Account = {acc.ID}");
+                    data.Role = cdata.Role;
+                    DB.UpdateData(data);
+                }
+
+            }
+        }
     }
     #endregion
 

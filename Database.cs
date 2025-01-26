@@ -10,15 +10,11 @@ public class MyPlayerData
 {
     public string Name { get; set; } = ""; // 玩家名字
     public string Role { get; set; } = "无"; // 角色名称
-    public bool Cooldown { get; set; } = false; // 冷却键
-    public DateTime CoolTime { get; set; } = DateTime.Now; // 冷却时间
     public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
-    public MyPlayerData(string name = "", string role = "无", bool cooldown = false, DateTime coolTime = default, Dictionary<int, int> buff = null!)
+    public MyPlayerData(string name = "", string role = "无", Dictionary<int, int> buff = null!)
     {
         this.Name = name ?? "";
         this.Role = role ?? "无";
-        this.Cooldown = cooldown;
-        this.CoolTime = coolTime;
         this.Buff = buff ?? new Dictionary<int, int>();
     }
 }
@@ -40,8 +36,6 @@ public class Database
                 Unique = true
             },
             new SqlColumn("Role", MySqlDbType.TinyText) { NotNull = true },
-            new SqlColumn("Cooldown", MySqlDbType.Int32) { DefaultValue = "0" },
-            new SqlColumn("CoolTime", MySqlDbType.Text) { DefaultValue = "CURRENT_TIMESTAMP" },
             new SqlColumn("Buff", MySqlDbType.Text)
         ));
 
@@ -95,8 +89,8 @@ public class Database
     public bool AddData(MyPlayerData data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
-        return TShock.DB.Query("INSERT INTO " + RolePlayer + " (Name, Role, Cooldown, CoolTime, Buff) VALUES (@0, @1, @2, @3, @4)",
-        data.Name, data.Role,data.Cooldown ? 1 : 0,data.CoolTime, buff) != 0;
+        return TShock.DB.Query("INSERT INTO " + RolePlayer + " (Name, Role, Buff) VALUES (@0, @1, @2)",
+        data.Name, data.Role, buff) != 0;
     }
     #endregion
 
@@ -130,8 +124,8 @@ public class Database
     public bool UpdateData(MyPlayerData data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
-        return TShock.DB.Query("UPDATE " + RolePlayer + " SET Role = @0, Cooldown = @1,CoolTime = @2, Buff = @3 WHERE Name = @4",
-            data.Role, data.Cooldown ? 1 : 0, data.CoolTime, buff, data.Name) != 0;
+        return TShock.DB.Query("UPDATE " + RolePlayer + " SET Role = @0, Buff = @1 WHERE Name = @2",
+            data.Role, buff, data.Name) != 0;
     }
     #endregion
 
@@ -168,8 +162,6 @@ public class Database
             return new MyPlayerData(
                 name: reader.Get<string>("Name"),
                 role: reader.Get<string>("Role"),
-                cooldown: reader.Get<bool>("Cooldown"),
-                coolTime: reader.Get<DateTime>("CoolTime"),
                 buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
             );
         }
@@ -189,8 +181,6 @@ public class Database
                 data.Add(new MyPlayerData(
                     name: reader.Get<string>("Name"),
                     role: reader.Get<string>("Role"),
-                    cooldown: reader.Get<bool>("Cooldown"),
-                    coolTime: reader.Get<DateTime>("CoolTime"),
                     buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
                 ));
             }
