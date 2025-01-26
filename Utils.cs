@@ -1,5 +1,7 @@
 ﻿using System.Text;
 using TShockAPI;
+using Microsoft.Xna.Framework;
+using Terraria;
 
 namespace RoleSelection;
 
@@ -67,7 +69,7 @@ internal class Utils
     #endregion
 
     #region 解析输入参数的属性名 通用方法 如:lf = 生命
-    public static void UpdatePT(Configuration.CData newItem, Dictionary<string, string> itemVal)
+    public static void UpdatePT(Configuration.MyData newItem, Dictionary<string, string> itemVal)
     {
         var mess = new StringBuilder();
         mess.Append($"已添加新角色: {newItem.Role} ");
@@ -101,7 +103,7 @@ internal class Utils
     #endregion
 
     #region 将字符串转换为 NetItem 数组
-    public static NetItem[] InvString(string inv)
+    public static NetItem[] StringToItem(string inv)
     {
         if (string.IsNullOrEmpty(inv))
             return new NetItem[NetItem.MaxInventory];
@@ -112,13 +114,70 @@ internal class Utils
             return NetItem.Parse(str);
         }).ToArray();
 
-        // 如果需要填充到最大长度，可以在这里进行处理
         if (items.Length < NetItem.MaxInventory)
         {
             Array.Resize(ref items, NetItem.MaxInventory);
         }
 
         return items;
+    }
+    #endregion
+
+    #region 将字符串转换为 NetItem 数组 2（用来解析所有盔甲都在一个MaxInventory的情况）
+    public static NetItem[] StringToItem2(string inv, int startIndex = 0, int length = -1)
+    {
+        if (string.IsNullOrEmpty(inv))
+            return new NetItem[NetItem.MaxInventory];
+
+        // 分割字符串并转换为 NetItem 数组
+        var items = inv.Split('~')
+                       .Where(str => !string.IsNullOrWhiteSpace(str)) // 过滤掉无效的字符串
+                       .Skip(startIndex) // 跳过不需要的部分
+                       .Take(length == -1 ? int.MaxValue : length) // 提取指定长度的部分
+                       .Select(str => NetItem.Parse(str))
+                       .ToArray();
+
+        // 如果数组长度小于指定长度，则填充空的 NetItem 对象
+        if (length > 0 && items.Length < length)
+        {
+            Array.Resize(ref items, length);
+        }
+
+        return items;
+    }
+    #endregion
+
+    #region 将 Item数组 转换为字符串
+    public static string ItemToString(Item[] items)
+    {
+        if (items == null || items.Length == 0)
+            return string.Empty;
+
+        var netItem = items
+            .Where(item => item.netID != 0)
+            .Select(item =>{ return item.ToString();})
+            .Where(str => str != null); // 过滤掉转换失败的 null 值
+
+        // 使用 "~" 连接字符串数组
+        return string.Join("~", netItem);
+    }
+    #endregion
+
+    #region 将 long 转换为 Color
+    public static Color DecodeColor(long colorValue)
+    {
+        var r = (byte)(colorValue & 0xFF);
+        var g = (byte)((colorValue >> 8) & 0xFF);
+        var b = (byte)((colorValue >> 16) & 0xFF);
+        var a = (byte)((colorValue >> 24) & 0xFF);
+        return new Color(r, g, b, a);
+    }
+    #endregion
+
+    #region Color 转换为 long（这个方法Tshock自带的）
+    public static long EncodeColor(Color color)
+    {
+        return ((long)color.A << 24) | ((long)color.R << 16) | ((long)color.G << 8) | color.B;
     }
     #endregion
 }

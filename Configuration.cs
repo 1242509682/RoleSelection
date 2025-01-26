@@ -11,15 +11,19 @@ namespace RoleSelection
 
         [JsonProperty("清理钱币", Order = 1)]
         public bool IsACoin { get; set; } = false;
-        [JsonProperty("进服清背包", Order = 2)]
+        [JsonProperty("免清物品表", Order = 2)]
+        public List<int> ExemptList { get; set; } = new List<int>();
+        [JsonProperty("进服清背包", Order = 3)]
         public bool JoinClearItem { get; set; } = false;
+        [JsonProperty("使用数据库储存(功能没写完)", Order = 4)]
+        public bool UseDBSave { get; set; } = false;
 
-        [JsonProperty("角色表", Order = 3)]
-        public List<CData> MyDataList { get; set; } = new List<CData>();
+        [JsonProperty("角色表", Order = 5)]
+        public List<MyData> MyDataList { get; set; } = new List<MyData>();
         #endregion
 
         #region 角色数据结构
-        public class CData
+        public class MyData
         {
             [JsonProperty("角色名", Order = 1)]
             public string Role { get; set; } = "";
@@ -29,9 +33,15 @@ namespace RoleSelection
             public int maxMana { get; set; } = 20;
             [JsonProperty("Buff", Order = 4)]
             public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
-            [JsonProperty("盔甲饰品表", Order = 5)]
-            public NetItem[] armor { get; internal set; } = new NetItem[] { };
-            [JsonProperty("背包表", Order = 6)]
+            [JsonProperty("当前盔甲饰品", Order = 5)]
+            public NetItem[] armor { get; internal set; } = Array.Empty<NetItem>();
+            [JsonProperty("盔甲饰品1", Order = 6)]
+            public NetItem[] loadout1Armor { get; internal set; } = Array.Empty<NetItem>();
+            [JsonProperty("盔甲饰品2", Order = 7)]
+            public NetItem[] loadout2Armor { get; internal set; } = Array.Empty<NetItem>();
+            [JsonProperty("盔甲饰品3", Order = 8)]
+            public NetItem[] loadout3Armor { get; internal set; } = Array.Empty<NetItem>();
+            [JsonProperty("背包表", Order = 9)]
             public NetItem[] inventory { get; internal set; } = TShock.ServerSideCharacterConfig.Settings.StartingInventory.ToArray();
         }
         #endregion
@@ -39,9 +49,10 @@ namespace RoleSelection
         #region 预设参数方法
         public void SetDefault()
         {
-            MyDataList = new List<CData>()
+            ExemptList = new List<int>() { 9 };
+            MyDataList = new List<MyData>()
             {
-                new CData()
+                new MyData()
                 {
                     Role = "萌新",
                     maxHealth = TShock.ServerSideCharacterConfig.Settings.StartingHealth,
@@ -50,7 +61,7 @@ namespace RoleSelection
                     inventory = TShock.ServerSideCharacterConfig.Settings.StartingInventory.ToArray(),
                 },
 
-                new CData()
+                new MyData()
                 {
                     Role = "战士",
                     maxHealth = 400,
@@ -69,7 +80,7 @@ namespace RoleSelection
                     }
                 },
 
-                new CData()
+                new MyData()
                 {
                     Role = "射手",
                     maxHealth = 400,
@@ -89,7 +100,7 @@ namespace RoleSelection
                     }
                 },
 
-                new CData()
+                new MyData()
                 {
                     Role = "法师",
                     maxHealth = 400,
@@ -108,7 +119,7 @@ namespace RoleSelection
                     }
                 },
 
-                new CData()
+                new MyData()
                 {
                     Role = "召唤",
                     maxHealth = 400,

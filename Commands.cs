@@ -133,7 +133,7 @@ public class Commands
                             }
                             else
                             {
-                                var NewData = new CData()
+                                var NewData = new MyData()
                                 {
                                     Role = name,
                                     maxHealth = TShock.ServerSideCharacterConfig.Settings.StartingHealth,
@@ -266,8 +266,7 @@ public class Commands
                                     TShock.DB.Query($"DELETE FROM tsCharacter WHERE AccountID = {other.ID};");
                                 }
 
-                                data2.Role = "无";
-                                DB.UpdateData(data2);
+                                DB.DelPlayer(other.Name);
                             }
                         }
                         else
@@ -341,7 +340,7 @@ public class Commands
     #endregion
 
     #region 菜单指令方法
-    private static void Help(TSPlayer plr, DBData? data)
+    private static void Help(TSPlayer plr, MyPlayerData? data)
     {
         if (plr.HasPermission("role.admin"))
         {

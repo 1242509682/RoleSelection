@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using Microsoft.Xna.Framework;
+using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
@@ -12,7 +13,7 @@ public class RoleSelection : TerrariaPlugin
     #region 插件信息
     public override string Name => "角色选择系统";
     public override string Author => "SAP 羽学";
-    public override Version Version => new Version(1, 0, 1);
+    public override Version Version => new Version(1, 0, 2);
     public override string Description => "使用指令选择角色存档";
     #endregion
 
@@ -74,12 +75,12 @@ public class RoleSelection : TerrariaPlugin
     private void OnGreetPlayer(GreetPlayerEventArgs args)
     {
         var plr = TShock.Players[args.Who];
-        if (plr == null || !plr.Active || !plr.IsLoggedIn || !Config.Enabled) return;
+        if (plr == null || !plr.Active || !plr.IsLoggedIn || !plr.HasPermission("role.use") || !Config.Enabled) return;
 
         var data = DB.GetData(plr.Name); //获取玩家数据方法
         if (data == null) //如果没有获取到的玩家数据
         {
-            data = new DBData()
+            data = new MyPlayerData()
             {
                 Name = plr.Name,
                 Role = "萌新",
@@ -110,19 +111,40 @@ public class RoleSelection : TerrariaPlugin
     #endregion
 
     #region 选职业方法
-    internal static void Rank(TSPlayer plr, DBData? data, Configuration.CData CData)
+    internal static void Rank(TSPlayer plr, MyPlayerData? data, Configuration.MyData CData)
     {
-        if (data == null || CData.Role == "无") return;
+        if (data == null || CData.Role == "无" || !plr.HasPermission("role.use")) return;
 
-        data.Role = CData.Role;
         data.Buff = CData.Buff;
-        ClearAll(plr); //清除所有
-        SetAll(plr, CData); //设置所有
-
+        data.Role = CData.Role;
         DB.UpdateData(data);
+
+        if (!Config.UseDBSave)
+        {
+            ClearAll(plr); //清除所有
+            SetAll(plr, CData); //设置所有
+            plr.SendMessage($"已清理背包选择角色 [c/F86570:{CData.Role}]", 240, 250, 150);
+        }
+        else
+        {
+            var data2 = DB.GetRoleData(plr, data.Role);
+            if (data2 == null || !data2.Role.Contains(data.Role))
+            {
+                ClearAll(plr); //清除所有
+                SetAll(plr, CData); //设置配置里的物品
+                DB.AddRoleData(plr, data.Role);
+                plr.SendMessage($"已添加角色 [c/F86570:{data.Role}]", 240, 250, 150);
+            }
+            else
+            {
+                ClearAll(plr); //清除所有
+                SetAll(plr, data2); //设置数据库里的物品
+                DB.UpdateRoleDB(plr, data.Role);
+                plr.SendMessage($"已选择角色 [c/5B9DE1:{data2.Role}]", 240, 250, 150);
+            }
+        }
+
         SetBuff(plr); //设置玩家BUFF
-        plr.SendData(PacketTypes.PlayerSlot, "", plr.Index);
-        plr.SendMessage($"您已选角为 {CData.Role}", 240, 250, 150);
     }
     #endregion
 
@@ -130,75 +152,97 @@ public class RoleSelection : TerrariaPlugin
     internal static void SetAll(TSPlayer plr, object data)
     {
         var tplr = plr.TPlayer;
-        if (tplr == null || tplr.inventory == null) return;
+        if (tplr == null) return;
 
         // 设置玩家生命上限和魔力上限
         var maxHealth = 0;
         var maxMana = 0;
 
-        //设置玩家物品栏和盔甲栏
-        NetItem[] netInv = new NetItem[] { };
-        NetItem[] netArmor = new NetItem[] { };
+        // 初始化物品栏和盔甲栏
+        var netInv = Array.Empty<NetItem>();
+        var netArmor = Array.Empty<NetItem>();
+        var loadout1Armor = Array.Empty<NetItem>();
+        var loadout2Armor = Array.Empty<NetItem>();
+        var loadout3Armor = Array.Empty<NetItem>();
 
-        //data可以是配置文件里的也可以是TS强制开荒里的，取决于使用SetAll方法时对data的传参
-        if (data is CData cdata && cdata.inventory != null)
+        var hairColor = new Color(255, 255, 255);
+        var pantsColor = new Color(255, 255, 255);
+        var shirtColor = new Color(255, 255, 255);
+        var eyeColor = new Color(255, 255, 255);
+        var skinColor = new Color(255, 255, 255);
+        var underShirtColor = new Color(255, 255, 255);
+        var shoeColor = new Color(255, 255, 255);
+
+        // 根据传入的数据类型设置相应的属性
+        if (data is MyData my)
         {
-            maxHealth = cdata.maxHealth;
-            maxMana = cdata.maxMana;
-            netInv = cdata.inventory;
-            netArmor = cdata.armor ?? Array.Empty<NetItem>();
+            maxHealth = my.maxHealth;
+            maxMana = my.maxMana;
+            netInv = my.inventory ?? Array.Empty<NetItem>();
+            netArmor = my.armor ?? Array.Empty<NetItem>();
+            loadout1Armor = my.loadout1Armor ?? Array.Empty<NetItem>();
+            loadout2Armor = my.loadout2Armor ?? Array.Empty<NetItem>();
+            loadout3Armor = my.loadout3Armor ?? Array.Empty<NetItem>();
         }
-        else if (data is PlayerData pd && pd.inventory != null)
+        else if (data is MyRoleData db)
         {
-            maxHealth = pd.maxHealth;
-            maxMana = pd.maxMana;
-            netInv = pd.inventory;
-            netArmor = Array.Empty<NetItem>();
+            maxHealth = db.MaxHealth;
+            maxMana = db.MaxMana;
+            netInv = Utils.StringToItem(db.Inventory);
+            netArmor = Utils.StringToItem2(db.Inventory, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
+            loadout1Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout1Armor.Item1, NetItem.ArmorSlots);
+            loadout2Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout2Armor.Item1, NetItem.ArmorSlots);
+            loadout3Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout3Armor.Item1, NetItem.ArmorSlots);
+            hairColor = Utils.DecodeColor(db.hairColor);
+            pantsColor = Utils.DecodeColor(db.pantsColor);
+            shirtColor = Utils.DecodeColor(db.shirtColor);
+            eyeColor = Utils.DecodeColor(db.eyeColor);
+            skinColor = Utils.DecodeColor(db.skinColor);
+            underShirtColor = Utils.DecodeColor(db.underShirtColor);
+            shoeColor = Utils.DecodeColor(db.shoeColor);
         }
 
         //设置背包物品
-        if (netInv != null && netInv.Length > 0)
-        {
-            for (var i = 0; i < Math.Min(netInv.Count(), NetItem.MaxInventory); i++)
-            {
-                var inv = netInv[i];
-                if (inv.NetId != 0)
-                {
-                    tplr.inventory[i] = TShock.Utils.GetItemById(inv.NetId);
-                    tplr.inventory[i].stack = inv.Stack;
-                    tplr.inventory[i].prefix = inv.PrefixId;
-                    plr.SendData(PacketTypes.PlayerSlot, "", plr.Index, i);
-                    plr.PlayerData.StoreSlot(i, tplr.inventory[i].type, tplr.inventory[i].prefix, tplr.inventory[i].stack);
-                }
-            }
-        }
+        SetItem(plr, tplr.inventory, netInv, NetItem.InventoryIndex.Item1, NetItem.InventorySlots);
+        // 设置当前盔甲栏物品
+        SetItem(plr, tplr.armor, netArmor, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
+        // 设置其他装备页的盔甲与饰品
+        SetItem(plr, tplr.Loadouts[0].Armor, loadout1Armor, NetItem.Loadout1Armor.Item1, NetItem.Loadout1Armor.Item2);
+        SetItem(plr, tplr.Loadouts[1].Armor, loadout2Armor, NetItem.Loadout2Armor.Item1, NetItem.Loadout2Armor.Item2);
+        SetItem(plr, tplr.Loadouts[2].Armor, loadout3Armor, NetItem.Loadout3Armor.Item1, NetItem.Loadout3Armor.Item2);
 
-        // 设置盔甲与饰品
-        if (netArmor != null && netArmor.Length > 0)
-        {
-            for (var i = 0; i < Math.Min(netArmor.Count(), NetItem.MaxInventory); i++)
-            {
-                var armor = netArmor[i];
-                if (armor.NetId != 0)
-                {
-                    tplr.armor[i] = TShock.Utils.GetItemById(armor.NetId);
-                    tplr.armor[i].stack = armor.Stack;
-                    tplr.armor[i].prefix = armor.PrefixId;
-                    plr.SendData(PacketTypes.PlayerSlot, "", plr.Index, i + NetItem.ArmorIndex.Item1);
-                    plr.PlayerData.StoreSlot(i + NetItem.ArmorIndex.Item1, tplr.armor[i].type, tplr.armor[i].prefix, tplr.armor[i].stack);
-                }
-            }
-        }
-
-        //设置玩家生命上限
-        tplr.statLife = tplr.statLifeMax = maxHealth;
+        // 设置玩家生命上限
+        tplr.statLifeMax = maxHealth;
+        tplr.statLife = maxHealth;
         plr.SendData(PacketTypes.PlayerHp, "", plr.Index);
 
-        //设置玩家魔力上限
-        tplr.statMana = tplr.statManaMax = maxMana;
+        // 设置玩家魔力上限
+        tplr.statManaMax = maxMana;
+        tplr.statMana = maxMana;
         plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
+        DB.UpdateSSC(plr); // 更新SSC数据库
+    }
+    #endregion
 
-        DB.UpdateTShockDB(plr.Account.ID, plr.PlayerData);
+    #region 设置物品方法
+    private static void SetItem(TSPlayer plr, Item[] plrItem, NetItem[] items, int start, int MaxSlot)
+    {
+        var pd = TShock.CharacterDB.GetPlayerData(plr, plr.Account.ID);
+        if (items != null && items.Length > 0)
+        {
+            for (var i = 0; i < Math.Min(items.Length, MaxSlot); i++)
+            {
+                if (items[i].NetId != 0)
+                {
+                    plrItem[i] = TShock.Utils.GetItemById(items[i].NetId);
+                    plrItem[i].stack = items[i].Stack;
+                    plrItem[i].prefix = items[i].PrefixId;
+                    plr.SendData(PacketTypes.PlayerSlot, "", plr.Index, i + start);
+                    pd.StoreSlot(i + start, plrItem[i].type, plrItem[i].prefix, plrItem[i].stack);
+                    pd.CopyCharacter(plr);
+                }   
+            }
+        }
     }
     #endregion
 
@@ -250,7 +294,7 @@ public class RoleSelection : TerrariaPlugin
         Array.Clear(tplr.buffType, 0, tplr.buffType.Length);
         plr.SendData(PacketTypes.PlayerBuff, "", plr.Index);
 
-        DB.UpdateTShockDB(plr.Account.ID, plr.PlayerData);
+        DB.UpdateSSC(plr);
     }
 
     private static void ClearSlots(Item[] items)
@@ -258,9 +302,9 @@ public class RoleSelection : TerrariaPlugin
         if (items == null) return;
         foreach (var item in items)
         {
-            // 如果是钱币则跳过
-            if (!Config.IsACoin && item.IsACoin) continue;
-
+            // 如果是钱币 或免清物品表的物品ID则跳过
+            if ((!Config.IsACoin && item.IsACoin) ||
+                  Config.ExemptList.Contains(item.netID)) continue;
             item.TurnToAir();
         }
     }
