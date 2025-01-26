@@ -10,11 +10,15 @@ public class MyPlayerData
 {
     public string Name { get; set; } = ""; // 玩家名字
     public string Role { get; set; } = "无"; // 角色名称
+    public bool Cooldown { get; set; } = false; // 冷却键
+    public DateTime CoolTime { get; set; } = DateTime.Now; // 冷却时间
     public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
-    public MyPlayerData(string name = "", string role = "无", Dictionary<int, int> buff = null!)
+    public MyPlayerData(string name = "", string role = "无", bool cooldown = false, DateTime coolTime = default, Dictionary<int, int> buff = null!)
     {
         this.Name = name ?? "";
         this.Role = role ?? "无";
+        this.Cooldown = cooldown;
+        this.CoolTime = coolTime;
         this.Buff = buff ?? new Dictionary<int, int>();
     }
 }
@@ -36,6 +40,8 @@ public class Database
                 Unique = true
             },
             new SqlColumn("Role", MySqlDbType.TinyText) { NotNull = true },
+            new SqlColumn("Cooldown", MySqlDbType.Int32) { DefaultValue = "0" },
+            new SqlColumn("CoolTime", MySqlDbType.Text) { DefaultValue = "CURRENT_TIMESTAMP" },
             new SqlColumn("Buff", MySqlDbType.Text)
         ));
 
@@ -89,8 +95,8 @@ public class Database
     public bool AddData(MyPlayerData data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
-        return TShock.DB.Query("INSERT INTO " + RolePlayer + " (Name, Role, Buff) VALUES (@0, @1, @2)",
-        data.Name, data.Role, buff) != 0;
+        return TShock.DB.Query("INSERT INTO " + RolePlayer + " (Name, Role, Cooldown, CoolTime, Buff) VALUES (@0, @1, @2, @3, @4)",
+        data.Name, data.Role,data.Cooldown ? 1 : 0,data.CoolTime, buff) != 0;
     }
     #endregion
 
@@ -124,8 +130,8 @@ public class Database
     public bool UpdateData(MyPlayerData data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
-        return TShock.DB.Query("UPDATE " + RolePlayer + " SET Role = @0, Buff = @1 WHERE Name = @2",
-            data.Role, buff, data.Name) != 0;
+        return TShock.DB.Query("UPDATE " + RolePlayer + " SET Role = @0, Cooldown = @1,CoolTime = @2, Buff = @3 WHERE Name = @4",
+            data.Role, data.Cooldown ? 1 : 0, data.CoolTime, buff, data.Name) != 0;
     }
     #endregion
 
@@ -162,6 +168,8 @@ public class Database
             return new MyPlayerData(
                 name: reader.Get<string>("Name"),
                 role: reader.Get<string>("Role"),
+                cooldown: reader.Get<bool>("Cooldown"),
+                coolTime: reader.Get<DateTime>("CoolTime"),
                 buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
             );
         }
@@ -181,6 +189,8 @@ public class Database
                 data.Add(new MyPlayerData(
                     name: reader.Get<string>("Name"),
                     role: reader.Get<string>("Role"),
+                    cooldown: reader.Get<bool>("Cooldown"),
+                    coolTime: reader.Get<DateTime>("CoolTime"),
                     buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
                 ));
             }
@@ -213,13 +223,13 @@ public class Database
                 spawny: reader.Get<int>("spawnY"),
                 skinvariant: reader.Get<int>("skinVariant"),
                 hairs: reader.Get<int>("hair"),
-                hairdye: reader.Get<int>("hairDye"),
+                hairdye: reader.Get<byte>("hairDye"),
                 haircolor: reader.Get<long>("hairColor"),
                 pantscolor: reader.Get<long>("pantsColor"),
                 shirtcolor: reader.Get<long>("shirtColor"),
                 undershirtcolor: reader.Get<long>("underShirtColor"),
                 shoecolor: reader.Get<long>("shoeColor"),
-                hidevisuals: reader.Get<long>("hideVisuals"),
+                hidevisuals: TShock.Utils.DecodeBoolArray(reader.Get<int>("hideVisuals")),
                 skincolor: reader.Get<long>("skinColor"),
                 eyecolor: reader.Get<long>("eyeColor"),
                 questscompleted: reader.Get<int>("questsCompleted"),
@@ -268,84 +278,5 @@ public class Database
     }
     #endregion
 
-    /* ——————SSC—————— */
-
-    #region 更新SSC开荒数据
-    public bool UpdateSSC(TSPlayer plr)
-    {
-        var pd = TShock.CharacterDB.GetPlayerData(plr, plr.Account.ID);
-        if (pd == null || !pd.exists) return false;
-
-        return TShock.DB.Query("UPDATE tsCharacter SET Health = @0, MaxHealth = @1, Mana = @2, MaxMana = @3, Inventory = @4, spawnX = @6, spawnY = @7, hair = @8, hairDye = @9, hairColor = @10, pantsColor = @11, shirtColor = @12, underShirtColor = @13, shoeColor = @14, hideVisuals = @15, skinColor = @16, eyeColor = @17, questsCompleted = @18, skinVariant = @19, extraSlot = @20, usingBiomeTorches = @21, happyFunTorchTime = @22, unlockedBiomeTorches = @23, currentLoadoutIndex = @24, ateArtisanBread = @25, usedAegisCrystal = @26, usedAegisFruit = @27, usedArcaneCrystal = @28, usedGalaxyPearl = @29, usedGummyWorm = @30, usedAmbrosia = @31, unlockedSuperCart = @32, enabledSuperCart = @33 WHERE Account = @5;",
-            pd.health,pd.maxHealth,pd.mana,pd.maxMana,
-            string.Join("~", pd.inventory), plr.Account.ID, pd.spawnX,pd.spawnY,pd.hair,pd.hairDye,
-            TShock.Utils.EncodeColor(pd.hairColor),TShock.Utils.EncodeColor(pd.pantsColor),
-            TShock.Utils.EncodeColor(pd.shirtColor),TShock.Utils.EncodeColor(pd.underShirtColor),
-            TShock.Utils.EncodeColor(pd.shoeColor),TShock.Utils.EncodeBoolArray(pd.hideVisuals),
-            TShock.Utils.EncodeColor(pd.skinColor),TShock.Utils.EncodeColor(pd.eyeColor),
-            pd.questsCompleted,pd.skinVariant!,pd.extraSlot!,pd.usingBiomeTorches,
-            pd.happyFunTorchTime,pd.unlockedBiomeTorches,pd.currentLoadoutIndex,
-            pd.ateArtisanBread,pd.usedAegisCrystal,pd.usedAegisFruit,pd.usedArcaneCrystal,
-            pd.usedGalaxyPearl,pd.usedGummyWorm,pd.usedAmbrosia,pd.unlockedSuperCart,pd.enabledSuperCart) != 0;
-    }
-    #endregion
-
-    #region 获取SSC数据
-    public PlayerData GetSSC(TSPlayer plr, string role)
-    {
-        var pd = new PlayerData(plr);
-        pd.exists = true;
-
-        var accAndSlot = $"{plr.Account.ID}-{role}";
-        using var reader = TShock.DB.QueryReader("SELECT * FROM " + RoleData + " WHERE AccAndSlot = @0", accAndSlot);
-        if (reader.Read())
-        {
-            pd.exists = true;
-            pd.health = reader.Get<int>("Health");
-            pd.maxHealth = reader.Get<int>("MaxHealth");
-            pd.mana = reader.Get<int>("Mana");
-            pd.maxMana = reader.Get<int>("MaxMana");
-            List<NetItem> list = reader.Get<string>("Inventory").Split('~').Select(new Func<string, NetItem>(NetItem.Parse)).ToList();
-            if (list.Count < NetItem.MaxInventory)
-            {
-                list.InsertRange(67, new NetItem[2]);
-                list.InsertRange(77, new NetItem[2]);
-                list.InsertRange(87, new NetItem[2]);
-                list.AddRange(new NetItem[NetItem.MaxInventory - list.Count]);
-            }
-
-            pd.inventory = list.ToArray();
-            pd.extraSlot = reader.Get<int>("extraSlot");
-            pd.spawnX = reader.Get<int>("spawnX");
-            pd.spawnY = reader.Get<int>("spawnY");
-            pd.skinVariant = reader.Get<int?>("skinVariant");
-            pd.hair = reader.Get<int?>("hair");
-            pd.hairDye = (byte)reader.Get<int>("hairDye");
-            pd.hairColor = TShock.Utils.DecodeColor(reader.Get<int?>("hairColor"));
-            pd.pantsColor = TShock.Utils.DecodeColor(reader.Get<int?>("pantsColor"));
-            pd.shirtColor = TShock.Utils.DecodeColor(reader.Get<int?>("shirtColor"));
-            pd.underShirtColor = TShock.Utils.DecodeColor(reader.Get<int?>("underShirtColor"));
-            pd.shoeColor = TShock.Utils.DecodeColor(reader.Get<int?>("shoeColor"));
-            pd.hideVisuals = TShock.Utils.DecodeBoolArray(reader.Get<int?>("hideVisuals"));
-            pd.skinColor = TShock.Utils.DecodeColor(reader.Get<int?>("skinColor"));
-            pd.eyeColor = TShock.Utils.DecodeColor(reader.Get<int?>("eyeColor"));
-            pd.questsCompleted = reader.Get<int>("questsCompleted");
-            pd.usingBiomeTorches = reader.Get<int>("usingBiomeTorches");
-            pd.happyFunTorchTime = reader.Get<int>("happyFunTorchTime");
-            pd.unlockedBiomeTorches = reader.Get<int>("unlockedBiomeTorches");
-            pd.currentLoadoutIndex = reader.Get<int>("currentLoadoutIndex");
-            pd.ateArtisanBread = reader.Get<int>("ateArtisanBread");
-            pd.usedAegisCrystal = reader.Get<int>("usedAegisCrystal");
-            pd.usedAegisFruit = reader.Get<int>("usedAegisFruit");
-            pd.usedArcaneCrystal = reader.Get<int>("usedArcaneCrystal");
-            pd.usedGalaxyPearl = reader.Get<int>("usedGalaxyPearl");
-            pd.usedGummyWorm = reader.Get<int>("usedGummyWorm");
-            pd.usedAmbrosia = reader.Get<int>("usedAmbrosia");
-            pd.unlockedSuperCart = reader.Get<int>("unlockedSuperCart");
-            pd.enabledSuperCart = reader.Get<int>("enabledSuperCart");
-        }
-        return pd;
-    }
-    #endregion
 
 }

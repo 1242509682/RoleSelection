@@ -7,6 +7,18 @@
 ## Update Log
 
 ```
+v1.0.2
+Added database storage logic and its corresponding command: /rl db
+When 'Data Storage' is enabled, you need to enter /rl number twice to normally change roles.
+The first entry initializes; when opening the /rl command menu, a corresponding prompt will be seen.
+After initialization ends, the menu page will display the current character status normally.
+Added 'Item Table Exemption'.
+Configuration options now include armor accessories slots 1-3:
+This configuration option is only used for presetting initial equipment (the first 3 are armors and the next 7 are accessories).
+There is a 2-second role-changing delay upon switching roles, which requires the player to move or attack to take effect (designed to correctly save the current character state).
+Fixed the bug where changing roles would clear the player's inventory.
+Disabling 'Use Database Storage' only sets the default role in the configuration items and clears all current items instantly (and it is done immediately).
+
 v1.0.1
 Fixed the bug where characters had no equipment when selected.
 Fixed the bug where setting buffs would apply to all characters.
@@ -33,6 +45,7 @@ A small plugin improved for SAP, mainly for PVP servers.
 | /rl add <role> | /rl a |   role.admin    |    Add character    |
 | /rl del <role> | /rl d |   role.admin    |    Remove character    |
 | /rl rm <player name> | /rl r |   role.admin    |    Remove specified player's data    |
+| /rl db | None |   role.admin    |    Enable or disable Database storage    |
 | /rl reset | /rl rs |   role.admin    |    Clear all player data    |
 | /reload  | None |   tshock.cfg.reload    |    Reload configuration file    |
 
@@ -40,19 +53,27 @@ A small plugin improved for SAP, mainly for PVP servers.
 > Configuration file location： tshock/角色选择系统.json
 ```json
 {
-  "PluginEnabled": true,
-  "ClearCoins": false,
-  "ClearInventoryOnJoin": false,
-  "CharacterList": [
+  "Plugin Enabled": true,
+  "Clear Coins": false,
+  "Clean Inventory on Login": false,
+  "Item Table Exemption": [
+    71
+  ],
+  "Data Storage": true,
+  "Refresh Delay": 2000.0,
+  "Character Table": [
     {
-      "CharacterName": "Newbie",
+      "Role Name": "Newbie",
       "Health": 100,
       "Mana": 20,
       "Buff": {
         "11": -1
       },
-      "ArmorAccessoryList": [],
-      "InventoryList": [
+      "Current Armor Accessories": [],
+      "Armor Accessories Slot 1": [],
+      "Armor Accessories Slot 2": [],
+      "Armor Accessories Slot 3": [],
+      "Inventory": [
         {
           "netID": -15,
           "prefix": 0,

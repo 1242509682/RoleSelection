@@ -309,6 +309,17 @@ public class Commands
                     }
                     break;
 
+                case "db":
+                    if (plr.HasPermission("role.admin"))
+                    {
+                        var enabled = Config.UseDBSave;
+                        Config.UseDBSave = !enabled;
+                        var text = enabled ? "[c/F86470:禁用]" : "[c/73E55C:启用]";
+                        Config.Write();
+                        plr.SendMessage($"已{text}数据库储存功能。", 170, 170, 170);
+                    }
+                    break;
+
                 case "rs":
                 case "reset":
                 case "重置":
@@ -326,7 +337,6 @@ public class Commands
                         }
 
                         DB.ClearData();
-                        TShock.DB.Query("delete from tsCharacter");
                         plr.SendMessage("已清空玩家数据表", 240, 250, 150);
                     }
                     break;
@@ -345,6 +355,7 @@ public class Commands
         if (plr.HasPermission("role.admin"))
         {
             plr.SendMessage("角色选择指令菜单\n" +
+                            "/rl 序号 ——选择角色\n" +
                             "/rl up <角色名/序号> ——选择角色\n" +
                             "/rl list ——列出已有角色\n" +
                             "/rl all ——列出其他玩家角色\n" +
@@ -352,6 +363,7 @@ public class Commands
                             "/rl add 角色名 ——添加角色\n" +
                             "/rl del 角色名 ——移除角色\n" +
                             "/rl rm 玩家名 ——移除指定玩家数据\n" +
+                            "/rl db ——开启|关闭数据存储\n" +
                             "/rl reset ——清空所有玩家数据表", 240, 250, 150);
         }
         else
@@ -364,8 +376,16 @@ public class Commands
 
         if (data != null)
         {
-            plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
+            if (data.Cooldown)
+            {
+                plr.SendMessage($"[c/F86470:注:]首次转职需要[c/5B9EE1:输2遍]：[c/FF9567:/rl up {data.Role}]", 170, 170, 170);
+            }
+            else
+            {
+                plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
+            }
         }
+
     }
     #endregion
 

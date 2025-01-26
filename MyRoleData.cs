@@ -16,13 +16,13 @@ public class MyRoleData
     public int spawnY { get; set; }
     public int skinVariant { get; set; }
     public int hair { get; set; }
-    public int hairDye { get; set; }
+    public byte hairDye { get; set; }
     public long hairColor { get; set; }
     public long pantsColor { get; set; }
     public long shirtColor { get; set; }
     public long underShirtColor { get; set; }
     public long shoeColor { get; set; }
-    public long hideVisuals { get; set; }
+    public bool[] hideVisuals { get; set; }
     public long skinColor { get; set; }
     public long eyeColor { get; set; }
     public int questsCompleted { get; set; }
@@ -40,7 +40,7 @@ public class MyRoleData
     public bool unlockedSuperCart { get; set; }
     public bool enabledSuperCart { get; set; }
 
-    public MyRoleData(string accAndSlot, string role, int account, string name, int health, int maxHealth, int mana, int maxMana, string inventoryString, bool extraslot, int spawnx, int spawny, int skinvariant, int hairs, int hairdye, long haircolor, long pantscolor, long shirtcolor, long undershirtcolor, long shoecolor, long hidevisuals, long skincolor, long eyecolor, int questscompleted, bool usingbiometorches, bool happyfuntorchtime, bool unlockedbiometorches, int currentloadoutindex, bool ateartisanbread, bool usedaegiscrystal, bool usedaegisfruit, bool usedarcanecrystal, bool usedgalaxypearl, bool usedgummyworm, bool usedambrosia, bool unlockedsupercart, bool enabledsupercart)
+    public MyRoleData(string accAndSlot, string role, int account, string name, int health, int maxHealth, int mana, int maxMana, string inventoryString, bool extraslot, int spawnx, int spawny, int skinvariant, int hairs, byte hairdye, long haircolor, long pantscolor, long shirtcolor, long undershirtcolor, long shoecolor, bool[] hidevisuals, long skincolor, long eyecolor, int questscompleted, bool usingbiometorches, bool happyfuntorchtime, bool unlockedbiometorches, int currentloadoutindex, bool ateartisanbread, bool usedaegiscrystal, bool usedaegisfruit, bool usedarcanecrystal, bool usedgalaxypearl, bool usedgummyworm, bool usedambrosia, bool unlockedsupercart, bool enabledsupercart)
     {
         AccAndSlot = accAndSlot;
         Role = role;

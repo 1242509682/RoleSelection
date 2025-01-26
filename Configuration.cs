@@ -8,17 +8,17 @@ namespace RoleSelection
         #region 实例变量
         [JsonProperty("插件开关", Order = 0)]
         public bool Enabled { get; set; } = true;
-
         [JsonProperty("清理钱币", Order = 1)]
         public bool IsACoin { get; set; } = false;
-        [JsonProperty("免清物品表", Order = 2)]
-        public List<int> ExemptList { get; set; } = new List<int>();
-        [JsonProperty("进服清背包", Order = 3)]
+        [JsonProperty("进服清背包", Order = 2)]
         public bool JoinClearItem { get; set; } = false;
-        [JsonProperty("使用数据库储存(功能没写完)", Order = 4)]
-        public bool UseDBSave { get; set; } = false;
-
-        [JsonProperty("角色表", Order = 5)]
+        [JsonProperty("免清物品表", Order = 3)]
+        public List<int> ExemptList { get; set; } = new List<int>();
+        [JsonProperty("数据储存", Order = 4)]
+        public bool UseDBSave { get; set; } = true;
+        [JsonProperty("刷新延迟", Order = 5)]
+        public double UpdateInterval { get; set; } = 2000.0;
+        [JsonProperty("角色表", Order = 6)]
         public List<MyData> MyDataList { get; set; } = new List<MyData>();
         #endregion
 
@@ -49,7 +49,7 @@ namespace RoleSelection
         #region 预设参数方法
         public void SetDefault()
         {
-            ExemptList = new List<int>() { 9 };
+            ExemptList = new List<int>() { 71 };
             MyDataList = new List<MyData>()
             {
                 new MyData()
