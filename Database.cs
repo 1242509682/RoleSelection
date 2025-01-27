@@ -3,15 +3,16 @@ using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using TShockAPI;
 using TShockAPI.DB;
+using static MonoMod.InlineRT.MonoModRule;
 
 namespace RoleSelection;
 
-public class MyPlayerData
+public class PlayerRole
 {
     public string Name { get; set; } = ""; // 玩家名字
     public string Role { get; set; } = "无"; // 角色名称
     public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
-    public MyPlayerData(string name = "", string role = "无", Dictionary<int, int> buff = null!)
+    public PlayerRole(string name = "", string role = "无", Dictionary<int, int> buff = null!)
     {
         this.Name = name ?? "";
         this.Role = role ?? "无";
@@ -24,6 +25,7 @@ public class Database
     #region 数据库表结构（使用Tshock自带的数据库作为存储）
     private readonly string RolePlayer;
     private readonly string RoleData;
+    public List<RoleData> rolePlayers = new();
     public Database()
     {
         RolePlayer = "RolePlayer";
@@ -35,17 +37,13 @@ public class Database
                 Primary = true,
                 Unique = true
             },
-            new SqlColumn("Role", MySqlDbType.TinyText) { NotNull = true },
+            new SqlColumn("Role", MySqlDbType.Text),
             new SqlColumn("Buff", MySqlDbType.Text)
         ));
 
         RoleData = "RoleData";
         sql.EnsureTableStructure(new SqlTable(RoleData,
-            new SqlColumn("AccAndSlot", MySqlDbType.Text)
-            {
-                Primary = true
-            },
-            new SqlColumn("Role", MySqlDbType.TinyText) { NotNull = true },
+            new SqlColumn("Role", MySqlDbType.Text),
             new SqlColumn("Account", MySqlDbType.Int32),
             new SqlColumn("Name", MySqlDbType.Text),
             new SqlColumn("Health", MySqlDbType.Int32),
@@ -82,46 +80,20 @@ public class Database
             new SqlColumn("unlockedSuperCart", MySqlDbType.Int32),
             new SqlColumn("enabledSuperCart", MySqlDbType.Int32)
             ));
+
+        ReadPlayerDatas();
     }
     #endregion
 
-    #region 创建数据方法
-    public bool AddData(MyPlayerData data)
+    #region 创建与更新玩家、角色数据
+    public bool AddPlayer(PlayerRole data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
         return TShock.DB.Query("INSERT INTO " + RolePlayer + " (Name, Role, Buff) VALUES (@0, @1, @2)",
         data.Name, data.Role, buff) != 0;
     }
-    #endregion
 
-    #region 创建玩家的角色数据
-    public bool AddRoleData(TSPlayer plr, string role)
-    {
-        if (!plr.IsLoggedIn) return false;
-        var tplr = plr.TPlayer;
-        var pd = TShock.CharacterDB.GetPlayerData(plr, plr.Account.ID);
-        pd.CopyCharacter(plr);
-        var AccAndSlot = plr.Account.ID.ToString() + "-" + role;
-
-        return TShock.DB.Query("INSERT INTO " + RoleData + " (AccAndSlot, Role, Account, Name, Health, MaxHealth, Mana, MaxMana, Inventory, extraSlot, spawnX, spawnY, skinVariant, hair, hairDye, hairColor, pantsColor, shirtColor, underShirtColor, shoeColor, hideVisuals, skinColor, eyeColor, questsCompleted, usingBiomeTorches, happyFunTorchTime, unlockedBiomeTorches, currentLoadoutIndex,ateArtisanBread, usedAegisCrystal, usedAegisFruit, usedArcaneCrystal, usedGalaxyPearl, usedGummyWorm, usedAmbrosia, unlockedSuperCart, enabledSuperCart) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @18, @19, @20, @21, @22, @23, @24, @25, @26, @27, @28, @29, @30, @31, @32, @33, @34, @35, @36)",
-            AccAndSlot, role, plr.Account.ID, plr.Account.Name,
-            tplr.statLife, tplr.statLifeMax, tplr.statMana, tplr.statManaMax,
-            string.Join("~", pd.inventory), tplr.extraAccessory ? 1 : 0,
-            tplr.SpawnX, tplr.SpawnY, tplr.skinVariant, tplr.hair, tplr.hairDye,
-            TShock.Utils.EncodeColor(new Color?(tplr.hairColor)), TShock.Utils.EncodeColor(new Color?(tplr.pantsColor)),
-            TShock.Utils.EncodeColor(new Color?(tplr.shirtColor)), TShock.Utils.EncodeColor(new Color?(tplr.underShirtColor)),
-            TShock.Utils.EncodeColor(new Color?(tplr.shoeColor)), TShock.Utils.EncodeBoolArray(tplr.hideVisibleAccessory),
-            TShock.Utils.EncodeColor(new Color?(tplr.skinColor)), TShock.Utils.EncodeColor(new Color?(tplr.eyeColor)),
-            tplr.anglerQuestsFinished, tplr.UsingBiomeTorches ? 1 : 0, tplr.happyFunTorchTime ? 1 : 0,
-            tplr.unlockedBiomeTorches ? 1 : 0, tplr.CurrentLoadoutIndex, tplr.ateArtisanBread ? 1 : 0,
-            tplr.usedAegisCrystal ? 1 : 0, tplr.usedAegisFruit ? 1 : 0, tplr.usedArcaneCrystal ? 1 : 0,
-            tplr.usedGalaxyPearl ? 1 : 0, tplr.usedGummyWorm ? 1 : 0, tplr.usedAmbrosia ? 1 : 0,
-            tplr.unlockedSuperCart ? 1 : 0, tplr.enabledSuperCart ? 1 : 0) != 0;
-    }
-    #endregion
-
-    #region 更新数据方法
-    public bool UpdateData(MyPlayerData data)
+    public bool UpdatePlayer(PlayerRole data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
         return TShock.DB.Query("UPDATE " + RolePlayer + " SET Role = @0, Buff = @1 WHERE Name = @2",
@@ -129,37 +101,14 @@ public class Database
     }
     #endregion
 
-    #region 更新玩家的角色数据
-    public bool UpdateRoleDB(TSPlayer plr, string role)
-    {
-        if (!plr.IsLoggedIn) return false;
-        var tplr = plr.TPlayer;
-        var pd = TShock.CharacterDB.GetPlayerData(plr, plr.Account.ID);
-        pd.CopyCharacter(plr);
-        var AccAndSlot = plr.Account.ID.ToString() + "-" + role;
-
-        return TShock.DB.Query("UPDATE " + RoleData + " SET Name = @0, Health = @1, MaxHealth = @2, Mana = @3, MaxMana = @4, Inventory = @5, Account = @6, spawnX = @7, spawnY = @8, hair = @9, hairDye = @10, hairColor = @11, pantsColor = @12, shirtColor = @13, underShirtColor = @14, shoeColor = @15, hideVisuals = @16, skinColor = @17, eyeColor = @18, questsCompleted = @19, skinVariant = @20, extraSlot = @21, usingBiomeTorches = @22, happyFunTorchTime = @23, unlockedBiomeTorches = @24, currentLoadoutIndex = @25, ateArtisanBread = @26, usedAegisCrystal = @27, usedAegisFruit = @28, usedArcaneCrystal = @29, usedGalaxyPearl = @30, usedGummyWorm = @31, usedAmbrosia = @32, unlockedSuperCart = @33, enabledSuperCart = @34, Role = @35 WHERE AccAndSlot = @36",
-            plr.Account.Name, tplr.statLife, tplr.statLifeMax, tplr.statMana, tplr.statManaMax,
-            string.Join("~", pd.inventory), plr.Account.ID, tplr.SpawnX, tplr.SpawnY, tplr.hair, tplr.hairDye,
-            TShock.Utils.EncodeColor(new Color?(tplr.hairColor)), TShock.Utils.EncodeColor(new Color?(tplr.pantsColor)),
-            TShock.Utils.EncodeColor(new Color?(tplr.shirtColor)), TShock.Utils.EncodeColor(new Color?(tplr.underShirtColor)),
-            TShock.Utils.EncodeColor(new Color?(tplr.shoeColor)), TShock.Utils.EncodeBoolArray(tplr.hideVisibleAccessory),
-            TShock.Utils.EncodeColor(new Color?(tplr.skinColor)), TShock.Utils.EncodeColor(new Color?(tplr.eyeColor)),
-            tplr.anglerQuestsFinished, tplr.skinVariant, tplr.extraAccessory ? 1 : 0, tplr.UsingBiomeTorches ? 1 : 0, tplr.happyFunTorchTime ? 1 : 0,
-            tplr.unlockedBiomeTorches ? 1 : 0, tplr.CurrentLoadoutIndex, tplr.ateArtisanBread ? 1 : 0, tplr.usedAegisCrystal ? 1 : 0,
-            tplr.usedAegisFruit ? 1 : 0, tplr.usedArcaneCrystal ? 1 : 0, tplr.usedGalaxyPearl ? 1 : 0, tplr.usedGummyWorm ? 1 : 0,
-            tplr.usedAmbrosia ? 1 : 0, tplr.unlockedSuperCart ? 1 : 0, tplr.enabledSuperCart ? 1 : 0, role, AccAndSlot) != 0;
-    }
-    #endregion
-
     #region 获取玩家数据
-    public MyPlayerData? GetData(string name)
+    public PlayerRole? GetData(string name)
     {
         using var reader = TShock.DB.QueryReader("SELECT * FROM " + RolePlayer + " WHERE Name = @0", name);
 
         if (reader.Read())
         {
-            return new MyPlayerData(
+            return new PlayerRole(
                 name: reader.Get<string>("Name"),
                 role: reader.Get<string>("Role"),
                 buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
@@ -168,17 +117,15 @@ public class Database
 
         return null;
     }
-    #endregion
 
-    #region 获取所有玩家数据
-    public List<MyPlayerData> GetAllData()
+    public List<PlayerRole> GetAllData()
     {
-        var data = new List<MyPlayerData>();
+        var data = new List<PlayerRole>();
         using (var reader = TShock.DB.QueryReader("SELECT * FROM " + RolePlayer))
         {
             while (reader.Read())
             {
-                data.Add(new MyPlayerData(
+                data.Add(new PlayerRole(
                     name: reader.Get<string>("Name"),
                     role: reader.Get<string>("Role"),
                     buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
@@ -190,64 +137,12 @@ public class Database
     }
     #endregion
 
-    #region 获取玩家的角色数据
-    public MyRoleData? GetRoleData(TSPlayer plr, string role)
-    {
-        var accAndSlot = $"{plr.Account.ID}-{role}";
-        using var reader = TShock.DB.QueryReader("SELECT * FROM " + RoleData + " WHERE AccAndSlot = @0", accAndSlot);
-
-        if (reader.Read())
-        {
-            return new MyRoleData(
-                accAndSlot: reader.Get<string>("AccAndSlot"),
-                role: reader.Get<string>("Role"),
-                account: reader.Get<int>("Account"),
-                name: reader.Get<string>("Name"),
-                health: reader.Get<int>("Health"),
-                maxHealth: reader.Get<int>("MaxHealth"),
-                mana: reader.Get<int>("Mana"),
-                maxMana: reader.Get<int>("MaxMana"),
-                inventoryString: reader.Get<string>("Inventory"),
-                extraslot: reader.Get<bool>("extraSlot"),
-                spawnx: reader.Get<int>("spawnX"),
-                spawny: reader.Get<int>("spawnY"),
-                skinvariant: reader.Get<int>("skinVariant"),
-                hairs: reader.Get<int>("hair"),
-                hairdye: reader.Get<byte>("hairDye"),
-                haircolor: reader.Get<long>("hairColor"),
-                pantscolor: reader.Get<long>("pantsColor"),
-                shirtcolor: reader.Get<long>("shirtColor"),
-                undershirtcolor: reader.Get<long>("underShirtColor"),
-                shoecolor: reader.Get<long>("shoeColor"),
-                hidevisuals: TShock.Utils.DecodeBoolArray(reader.Get<int>("hideVisuals")),
-                skincolor: reader.Get<long>("skinColor"),
-                eyecolor: reader.Get<long>("eyeColor"),
-                questscompleted: reader.Get<int>("questsCompleted"),
-                usingbiometorches: reader.Get<bool>("usingBiomeTorches"),
-                happyfuntorchtime: reader.Get<bool>("happyFunTorchTime"),
-                unlockedbiometorches: reader.Get<bool>("unlockedBiomeTorches"),
-                currentloadoutindex: reader.Get<int>("currentLoadoutIndex"),
-                ateartisanbread: reader.Get<bool>("ateArtisanBread"),
-                usedaegiscrystal: reader.Get<bool>("usedAegisCrystal"),
-                usedaegisfruit: reader.Get<bool>("usedAegisFruit"),
-                usedarcanecrystal: reader.Get<bool>("usedArcaneCrystal"),
-                usedgalaxypearl: reader.Get<bool>("usedGalaxyPearl"),
-                usedgummyworm: reader.Get<bool>("usedGummyWorm"),
-                usedambrosia: reader.Get<bool>("usedAmbrosia"),
-                unlockedsupercart: reader.Get<bool>("unlockedSuperCart"),
-                enabledsupercart: reader.Get<bool>("enabledSuperCart")
-            );
-        }
-
-        return null;
-    }
-    #endregion
-
     #region 删除指定数据方法
     public bool DelPlayer(string name)
     {
+        var acc = TShock.UserAccounts.GetUserAccountByName(name);
         var tb1 = TShock.DB.Query("DELETE FROM " + RolePlayer + " WHERE Name = @0", name);
-        var tb2 = TShock.DB.Query("DELETE FROM " + RoleData + " WHERE Name = @0", name);
+        var tb2 = TShock.DB.Query("DELETE FROM " + RoleData + " WHERE Account = @0", acc);
         return tb1 != 0 || tb2 != 0;
     }
 
@@ -268,5 +163,215 @@ public class Database
     }
     #endregion
 
+    /* ——————————由少司命贡献———————————— */
 
+    #region 读取玩家数据
+    public void ReadPlayerDatas()
+    {
+        try
+        {
+            using var reader = TShock.DB.QueryReader("SELECT * FROM RoleData");
+            while (reader.Read())
+            {
+                RoleData pd = new()
+                {
+                    exists = true,
+                    Account = reader.Get<int>("Account"),
+                    Role = reader.Get<string>("Role"),
+                    health = reader.Get<int>("Health"),
+                    maxHealth = reader.Get<int>("MaxHealth"),
+                    mana = reader.Get<int>("Mana"),
+                    maxMana = reader.Get<int>("MaxMana")
+                };
+                List<NetItem> inventory = reader.Get<string>("Inventory").Split('~').Select(NetItem.Parse).ToList();
+                if (inventory.Count < NetItem.MaxInventory)
+                {
+                    //TODO: unhardcode this - stop using magic numbers and use NetItem numbers
+                    //Set new armour slots empty
+                    inventory.InsertRange(67, new NetItem[2]);
+                    //Set new vanity slots empty
+                    inventory.InsertRange(77, new NetItem[2]);
+                    //Set new dye slots empty
+                    inventory.InsertRange(87, new NetItem[2]);
+                    //Set the rest of the new slots empty
+                    inventory.AddRange(new NetItem[NetItem.MaxInventory - inventory.Count]);
+                }
+                pd.inventory = inventory.ToArray();
+                pd.extraSlot = reader.Get<int>("extraSlot");
+                pd.spawnX = reader.Get<int>("spawnX");
+                pd.spawnY = reader.Get<int>("spawnY");
+                pd.skinVariant = reader.Get<int?>("skinVariant");
+                pd.hair = reader.Get<int?>("hair");
+                pd.hairDye = (byte)reader.Get<int>("hairDye");
+                pd.hairColor = TShock.Utils.DecodeColor(reader.Get<int?>("hairColor"));
+                pd.pantsColor = TShock.Utils.DecodeColor(reader.Get<int?>("pantsColor"));
+                pd.shirtColor = TShock.Utils.DecodeColor(reader.Get<int?>("shirtColor"));
+                pd.underShirtColor = TShock.Utils.DecodeColor(reader.Get<int?>("underShirtColor"));
+                pd.shoeColor = TShock.Utils.DecodeColor(reader.Get<int?>("shoeColor"));
+                pd.hideVisuals = TShock.Utils.DecodeBoolArray(reader.Get<int?>("hideVisuals"));
+                pd.skinColor = TShock.Utils.DecodeColor(reader.Get<int?>("skinColor"));
+                pd.eyeColor = TShock.Utils.DecodeColor(reader.Get<int?>("eyeColor"));
+                pd.questsCompleted = reader.Get<int>("questsCompleted");
+                pd.usingBiomeTorches = reader.Get<int>("usingBiomeTorches");
+                pd.happyFunTorchTime = reader.Get<int>("happyFunTorchTime");
+                pd.unlockedBiomeTorches = reader.Get<int>("unlockedBiomeTorches");
+                pd.currentLoadoutIndex = reader.Get<int>("currentLoadoutIndex");
+                pd.ateArtisanBread = reader.Get<int>("ateArtisanBread");
+                pd.usedAegisCrystal = reader.Get<int>("usedAegisCrystal");
+                pd.usedAegisFruit = reader.Get<int>("usedAegisFruit");
+                pd.usedArcaneCrystal = reader.Get<int>("usedArcaneCrystal");
+                pd.usedGalaxyPearl = reader.Get<int>("usedGalaxyPearl");
+                pd.usedGummyWorm = reader.Get<int>("usedGummyWorm");
+                pd.usedAmbrosia = reader.Get<int>("usedAmbrosia");
+                pd.unlockedSuperCart = reader.Get<int>("unlockedSuperCart");
+                pd.enabledSuperCart = reader.Get<int>("enabledSuperCart");
+                rolePlayers.Add(pd);
+            }
+        }
+        catch (Exception ex)
+        {
+            TShock.Log.Error(ex.ToString());
+        }
+    }
+    #endregion
+
+    #region 创建与更新玩家数据
+    public bool SetAndUpdate(TSPlayer plr, RoleData data, string role)
+    {
+        if (!plr.IsLoggedIn) return false;
+        var pd = data;
+        var old = GetData2(plr, role);
+        if (old == null)
+        {
+            try
+            {
+                TShock.DB.Query(
+                    "INSERT INTO RoleData (Account, Health, MaxHealth, Mana, MaxMana, Inventory, extraSlot, spawnX, spawnY, skinVariant, hair, hairDye, hairColor, pantsColor, shirtColor, underShirtColor, shoeColor, hideVisuals, skinColor, eyeColor, questsCompleted, usingBiomeTorches, happyFunTorchTime, unlockedBiomeTorches, currentLoadoutIndex, ateArtisanBread, usedAegisCrystal, usedAegisFruit, usedArcaneCrystal, usedGalaxyPearl, usedGummyWorm, usedAmbrosia, unlockedSuperCart, enabledSuperCart, Role) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @18, @19, @20, @21, @22, @23, @24, @25, @26, @27, @28, @29, @30, @31, @32, @33, @34);",
+                    plr.Account.ID,
+                    pd.health,
+                    pd.maxHealth,
+                    pd.mana,
+                    pd.maxMana,
+                    String.Join("~", pd.inventory),
+                    pd.extraSlot,
+                    pd.spawnX,
+                    pd.spawnX,
+                    pd.skinVariant,
+                    pd.hair,
+                    pd.hairDye,
+                    TShock.Utils.EncodeColor(plr.TPlayer.hairColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.pantsColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.shirtColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.underShirtColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.shoeColor),
+                    TShock.Utils.EncodeBoolArray(pd.hideVisuals),
+                    TShock.Utils.EncodeColor(plr.TPlayer.skinColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.eyeColor),
+                    pd.questsCompleted,
+                    pd.usingBiomeTorches,
+                    pd.happyFunTorchTime,
+                    pd.unlockedBiomeTorches,
+                    pd.currentLoadoutIndex,
+                    pd.ateArtisanBread,
+                    pd.usedAegisCrystal,
+                    pd.usedAegisFruit,
+                    pd.usedArcaneCrystal,
+                    pd.usedGalaxyPearl,
+                    pd.usedGummyWorm,
+                    pd.usedAmbrosia,
+                    pd.unlockedSuperCart,
+                    pd.enabledSuperCart,
+                    role);
+                rolePlayers.Add(pd);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                TShock.Log.Error(ex.ToString());
+            }
+        }
+        else
+        {
+            try
+            {
+                TShock.DB.Query(
+                    "UPDATE RoleData SET Health = @0, MaxHealth = @1, Mana = @2, MaxMana = @3, Inventory = @4, spawnX = @6, spawnY = @7, hair = @8, hairDye = @9, hairColor = @10, pantsColor = @11, shirtColor = @12, underShirtColor = @13, shoeColor = @14, hideVisuals = @15, skinColor = @16, eyeColor = @17, questsCompleted = @18, skinVariant = @19, extraSlot = @20, usingBiomeTorches = @21, happyFunTorchTime = @22, unlockedBiomeTorches = @23, currentLoadoutIndex = @24, ateArtisanBread = @25, usedAegisCrystal = @26, usedAegisFruit = @27, usedArcaneCrystal = @28, usedGalaxyPearl = @29, usedGummyWorm = @30, usedAmbrosia = @31, unlockedSuperCart = @32, enabledSuperCart = @33 WHERE Account = @5 AND Role = @34;",
+                    pd.health,
+                    pd.maxHealth,
+                    pd.mana,
+                    pd.maxMana,
+                    String.Join("~", pd.inventory),
+                    plr.Account.ID,
+                    pd.spawnX,
+                    pd.spawnX,
+                    pd.skinVariant,
+                    pd.hair,
+                    pd.hairDye,
+                    TShock.Utils.EncodeColor(plr.TPlayer.hairColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.pantsColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.shirtColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.underShirtColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.shoeColor),
+                    TShock.Utils.EncodeBoolArray(pd.hideVisuals),
+                    TShock.Utils.EncodeColor(plr.TPlayer.skinColor),
+                    TShock.Utils.EncodeColor(plr.TPlayer.eyeColor),
+                    pd.questsCompleted,
+                    pd.extraSlot ?? 0,
+                    pd.usingBiomeTorches,
+                    pd.happyFunTorchTime,
+                    pd.unlockedBiomeTorches,
+                    pd.currentLoadoutIndex,
+                    pd.ateArtisanBread,
+                    pd.usedAegisCrystal,
+                    pd.usedAegisFruit,
+                    pd.usedArcaneCrystal,
+                    pd.usedGalaxyPearl,
+                    pd.usedGummyWorm,
+                    pd.usedAmbrosia,
+                    pd.unlockedSuperCart,
+                    pd.enabledSuperCart,
+                    role);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                TShock.Log.Error(ex.ToString());
+            }
+        }
+        return false;
+    }
+    #endregion
+
+    #region 获取玩家数据方法
+    public RoleData? GetData2(TSPlayer plr, string role)
+    {
+        return rolePlayers.FirstOrDefault(p => p.Role == role && p.Account == plr.Account.ID);
+    }
+
+    public List<RoleData> GetRole(int userid)
+    {
+        return rolePlayers.FindAll(p => p.Account == userid);
+    }
+    #endregion
+
+    #region 移除玩家数据方法
+    public bool RmPlayer(int userid, string role)
+    {
+        try
+        {
+            if (rolePlayers.RemoveAll(p => p.Account == userid && p.Role == role) > 0)
+            {
+                TShock.DB.Query("DELETE FROM RoleCharacter WHERE Account = @0 AND Role = @1;", userid, role);
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            TShock.Log.Error(ex.ToString());
+        }
+
+        return false;
+    } 
+    #endregion
 }

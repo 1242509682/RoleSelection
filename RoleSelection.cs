@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Terraria;
+﻿using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
@@ -12,8 +11,8 @@ public class RoleSelection : TerrariaPlugin
 {
     #region 插件信息
     public override string Name => "角色选择系统";
-    public override string Author => "SAP 羽学";
-    public override Version Version => new Version(1, 0, 3);
+    public override string Author => "SAP 羽学 少司命";
+    public override Version Version => new Version(1, 0, 4);
     public override string Description => "使用指令选择角色存档";
     #endregion
 
@@ -80,14 +79,14 @@ public class RoleSelection : TerrariaPlugin
         var data = DB.GetData(plr.Name); //获取玩家数据方法
         if (data == null) //如果没有获取到的玩家数据
         {
-            data = new MyPlayerData()
+            data = new PlayerRole()
             {
                 Name = plr.Name,
                 Role = "萌新",
                 Buff = new Dictionary<int, int>(),
             };
 
-            DB.AddData(data); //添加新数据
+            DB.AddPlayer(data); //添加新数据
 
             //设置新玩家职业
             foreach (var role in Config.MyDataList)
@@ -111,236 +110,85 @@ public class RoleSelection : TerrariaPlugin
     #endregion
 
     #region 选职业方法
-    internal static void Rank(TSPlayer plr, MyPlayerData? data, Configuration.MyData CData)
+    internal static void Rank(TSPlayer plr, PlayerRole? data, MyData my)
     {
-        if (data == null || CData.Role == "无" || !plr.HasPermission("role.use")) return;
+        if (data == null || my.Role == "无" || !plr.HasPermission("role.use") || !Config.Enabled) return;
 
+        //不使用数据库存储
         if (!Config.UseDBSave)
         {
-            data.Role = CData.Role;
-            data.Buff = CData.Buff;
-            DB.UpdateData(data);
             ClearAll(plr); //清除所有
-            SetAll(plr, CData); //设置所有
-            SetBuff(plr); //设置玩家BUFF
-            plr.SendMessage($"已清空背包使用角色 [c/F86570:{CData.Role}]", 170, 170, 170);
+            ConfigRole(plr, my); //设置所有
+            plr.SendMessage($"已清空背包使用角色 [c/F86570:{my.Role}]", 170, 170, 170);
         }
         else
         {
-            // 保存当前角色状态
-            if (!string.IsNullOrEmpty(data.Role))
-            {
-                DB.UpdateRoleDB(plr, data.Role);
-            }
+            var NewRole = new RoleData(plr, my.Role);
+            var roles = DB.GetRole(plr.Account.ID);
+            var data2 = roles.FirstOrDefault(p => p.Role == my.Role);
+            var old = DB.GetData2(plr, data.Role);
 
-            var data2 = DB.GetRoleData(plr, CData.Role);
             if (data2 == null)
             {
-                // 如果是新角色，添加角色并设置所有属性
-                ClearAll(plr); // 清除所有
-                SetAll(plr, CData); // 设置配置里的物品
-                DB.AddRoleData(plr, CData.Role);
-                plr.SendMessage($"已添加角色 [c/F86570:{CData.Role}]", 170, 170, 170);
+                //保存上个角色
+                SaveOldRole(plr, data, old);
+                ClearAll(plr);
+                ConfigRole(plr, my);
+                NewRole.CopyCharacter(plr);
+                DB.SetAndUpdate(plr, NewRole, my.Role);
+                plr.SendMessage($"已添加角色 [c/F74F5D:{my.Role}]", 170, 170, 170);
             }
             else
             {
-                // 如果角色已经存在，仅更新数据并应用（如果需要）
-                if (data.Role != CData.Role)
+                //保存上个角色
+                SaveOldRole(plr, data, old);
+                if (data.Role != my.Role)
                 {
-                    ClearAll(plr); // 清除所有
-                    SetAll(plr, data2); // 设置数据库里的物品
-                    plr.SendMessage($"已更换角色 [c/5B9DE1:{data2.Role}]", 170, 170, 170);
+                    data2.RestoreCharacter(plr);
+                    plr.SendMessage($"已更换角色 [c/8BE978:{data2.Role}]", 170, 170, 170);
                 }
             }
+        }
 
-            // 更新玩家角色信息
-            data.Role = CData.Role;
-            data.Buff = CData.Buff;
-            DB.UpdateData(data);
-            SetBuff(plr); // 设置玩家BUFF
+        data.Role = my.Role;
+        data.Buff = my.Buff;
+        DB.UpdatePlayer(data);
+        SetBuff(plr); // 设置玩家BUFF
+    }
+    #endregion
+
+    #region 保存上个角色方法
+    private static void SaveOldRole(TSPlayer plr, PlayerRole? data, RoleData? old)
+    {
+        if (!string.IsNullOrEmpty(data!.Role) && old != null)
+        {
+            old.CopyCharacter(plr);
+            DB.SetAndUpdate(plr, old, data.Role);
+            plr.SendMessage($"已保存角色 [c/5B9DE1:{data.Role}]", 170, 170, 170);
         }
     }
     #endregion
 
-    #region 设置玩家所有状态方法
-    internal static void SetAll(TSPlayer plr, object data)
+    #region 设置玩家为配置文件角色方法
+    internal static void ConfigRole(TSPlayer plr, MyData my)
     {
         var tplr = plr.TPlayer;
         if (tplr == null) return;
 
-        // 设置玩家生命上限和魔力上限
-        var Health = 0;
-        var maxHealth = 0;
-        var Mana = 0;
-        var maxMana = 0;
-        var extraSlot = false;
-        var spawnX = 0;
-        var spawnY = 0;
-        var skinVariant = 0;
-        var hair = 0;
-        byte hairDye = 0;
-        var hairColor = new Color(255, 255, 255);
-        var pantsColor = new Color(255, 255, 255);
-        var shirtColor = new Color(255, 255, 255);
-        var shoeColor = new Color(255, 255, 255);
-        var underShirtColor = new Color(255, 255, 255);
-        var hideVisuals = new bool[] { };
-        var skinColor = new Color(255, 255, 255);
-        var eyeColor = new Color(255, 255, 255);
-        var questsCompleted = 0;
-        var usingBiomeTorches = false;
-        var happyFunTorchTime = false;
-        var unlockedBiomeTorches = false;
-        var currentLoadoutIndex = 0;
-        var ateArtisanBread = false;
-        var usedAegisCrystal = false;
-        var usedAegisFruit = false;
-        var usedArcaneCrystal = false;
-        var usedGalaxyPearl = false;
-        var usedGummyWorm = false;
-        var usedAmbrosia = false;
-        var unlockedSuperCart = false;
-        var enabledSuperCart = false;
-
-        // 初始化物品栏和盔甲栏
-        var InventorySlots = Array.Empty<NetItem>();
-        var ArmorSlots = Array.Empty<NetItem>();
-        var DyeSlots = Array.Empty<NetItem>();
-        var MiscEquipSlots = Array.Empty<NetItem>();
-        var MiscDyeSlots = Array.Empty<NetItem>();
-        var PiggySlots = Array.Empty<NetItem>();
-        var SafeSlots = Array.Empty<NetItem>();
-        var TrashIndex = Array.Empty<NetItem>();
-        var ForgeSlots = Array.Empty<NetItem>();
-        var VoidSlots = Array.Empty<NetItem>();
-        var loadout1Armor = Array.Empty<NetItem>();
-        var Loadout1Dye = Array.Empty<NetItem>();
-        var loadout2Armor = Array.Empty<NetItem>();
-        var loadout2Dye = Array.Empty<NetItem>();
-        var loadout3Armor = Array.Empty<NetItem>();
-        var loadout3Dye = Array.Empty<NetItem>();
-
-        // 根据传入的数据类型设置相应的属性
-        if (data is MyData my)
-        {
-            maxHealth = my.maxHealth;
-            maxMana = my.maxMana;
-            MiscEquipSlots =
-            InventorySlots = my.inventory ?? Array.Empty<NetItem>();
-            ArmorSlots = my.armor ?? Array.Empty<NetItem>();
-            loadout2Armor = my.loadout2Armor ?? Array.Empty<NetItem>();
-            loadout3Armor = my.loadout3Armor ?? Array.Empty<NetItem>();
-            PiggySlots = my.PiggySlots ?? Array.Empty<NetItem>();
-            MiscEquipSlots = my.MiscEquipSlots ?? Array.Empty<NetItem>();
-        }
-        else if (data is MyRoleData db)
-        {
-            Health = db.Health;
-            Mana = db.Mana;
-            maxHealth = db.MaxHealth;
-            maxMana = db.MaxMana;
-            extraSlot = db.extraSlot;
-            spawnX = db.spawnX;
-            spawnY = db.spawnY;
-            skinVariant = db.skinVariant;
-            hair = db.hair;
-            hairDye = db.hairDye;
-            InventorySlots = Utils.StringToItem(db.Inventory);
-            ArmorSlots = Utils.StringToItem2(db.Inventory, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
-
-            DyeSlots = Utils.StringToItem2(db.Inventory, NetItem.DyeIndex.Item1, NetItem.DyeIndex.Item2);
-            MiscEquipSlots = Utils.StringToItem2(db.Inventory, NetItem.MiscEquipIndex.Item1, NetItem.MiscEquipIndex.Item2);
-            MiscDyeSlots = Utils.StringToItem2(db.Inventory, NetItem.MiscDyeIndex.Item1, NetItem.MiscDyeIndex.Item2);
-            PiggySlots = Utils.StringToItem2(db.Inventory, NetItem.PiggyIndex.Item1, NetItem.PiggyIndex.Item2);
-            SafeSlots = Utils.StringToItem2(db.Inventory, NetItem.SafeIndex.Item1, NetItem.SafeIndex.Item2);
-            TrashIndex = Utils.StringToItem2(db.Inventory, NetItem.TrashIndex.Item1, NetItem.TrashIndex.Item2);
-            ForgeSlots = Utils.StringToItem2(db.Inventory, NetItem.ForgeIndex.Item1, NetItem.ForgeIndex.Item2);
-            VoidSlots = Utils.StringToItem2(db.Inventory, NetItem.VoidIndex.Item1, NetItem.VoidIndex.Item2);
-            loadout1Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout1Armor.Item1, NetItem.Loadout1Armor.Item2);
-            Loadout1Dye = Utils.StringToItem2(db.Inventory, NetItem.Loadout1Dye.Item1, NetItem.Loadout1Dye.Item2);
-            loadout2Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout2Armor.Item1, NetItem.Loadout2Armor.Item2);
-            loadout2Dye = Utils.StringToItem2(db.Inventory, NetItem.Loadout2Dye.Item1, NetItem.Loadout2Dye.Item2);
-            loadout3Armor = Utils.StringToItem2(db.Inventory, NetItem.Loadout3Armor.Item1, NetItem.Loadout3Armor.Item2);
-            loadout3Dye = Utils.StringToItem2(db.Inventory, NetItem.Loadout3Dye.Item1, NetItem.Loadout3Dye.Item2);
-
-            hairColor = Utils.DecodeColor(db.hairColor);
-            pantsColor = Utils.DecodeColor(db.pantsColor);
-            shirtColor = Utils.DecodeColor(db.shirtColor);
-            eyeColor = Utils.DecodeColor(db.eyeColor);
-            skinColor = Utils.DecodeColor(db.skinColor);
-            underShirtColor = Utils.DecodeColor(db.underShirtColor);
-            shoeColor = Utils.DecodeColor(db.shoeColor);
-            hideVisuals = db.hideVisuals;
-            questsCompleted = db.questsCompleted;
-            usingBiomeTorches = db.usingBiomeTorches;
-            happyFunTorchTime = db.happyFunTorchTime;
-            unlockedBiomeTorches = db.unlockedBiomeTorches;
-            currentLoadoutIndex = db.currentLoadoutIndex;
-            ateArtisanBread = db.ateArtisanBread;
-            usedAegisCrystal = db.usedAegisCrystal;
-            usedAegisFruit = db.usedAegisFruit;
-            usedArcaneCrystal = db.usedArcaneCrystal;
-            usedGalaxyPearl = db.usedGalaxyPearl;
-            usedGummyWorm = db.usedGummyWorm;
-            usedAmbrosia = db.usedAmbrosia;
-            unlockedSuperCart = db.unlockedSuperCart;
-            enabledSuperCart = db.enabledSuperCart;
-        }
-
         // 设置玩家生命上限
-        tplr.statLife = tplr.statLifeMax = maxHealth;
+        tplr.statLife = tplr.statLifeMax = my.maxHealth;
         plr.SendData(PacketTypes.PlayerHp, "", plr.Index);
 
         // 设置玩家魔力上限
-        tplr.statMana = tplr.statManaMax = maxMana;
+        tplr.statMana = tplr.statManaMax = my.maxMana;
         plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
 
-        tplr.SpawnX = spawnX;
-        tplr.SpawnY = spawnY;
-        tplr.skinVariant = skinVariant;
-        tplr.hair = hair;
-        tplr.hairDye = hairDye;
-        tplr.hairColor = hairColor;
-        tplr.pantsColor = pantsColor;
-        tplr.shirtColor = shirtColor;
-        tplr.underShirtColor = underShirtColor;
-        tplr.shoeColor = shoeColor;
-        tplr.hideVisibleAccessory = hideVisuals;
-        tplr.skinColor = skinColor;
-        tplr.eyeColor = eyeColor;
-        tplr.anglerQuestsFinished = questsCompleted;
-        tplr.extraAccessory = extraSlot;
-        tplr.UsingBiomeTorches = usingBiomeTorches;
-        tplr.happyFunTorchTime = happyFunTorchTime;
-        tplr.unlockedBiomeTorches = unlockedBiomeTorches;
-        tplr.CurrentLoadoutIndex = currentLoadoutIndex;
-        tplr.ateArtisanBread = ateArtisanBread;
-        tplr.usedAegisCrystal = usedAegisCrystal;
-        tplr.usedAegisFruit = usedAegisFruit;
-        tplr.usedArcaneCrystal = usedArcaneCrystal;
-        tplr.usedGalaxyPearl = usedGalaxyPearl;
-        tplr.usedGummyWorm = usedGummyWorm;
-        tplr.usedAmbrosia = usedAmbrosia;
-        tplr.unlockedSuperCart = unlockedSuperCart;
-        tplr.enabledSuperCart = enabledSuperCart;
-        plr.SendData(PacketTypes.PlayerInfo, "", plr.Index, 0f, 0f, 0f, 0);
-
-        SetItem(plr, tplr.inventory, InventorySlots, NetItem.InventoryIndex.Item1, NetItem.InventorySlots);
-        SetItem(plr, tplr.armor, ArmorSlots, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
-        SetItem(plr, tplr.dye, DyeSlots, NetItem.DyeIndex.Item1, NetItem.DyeSlots);
-        SetItem(plr, tplr.miscEquips, MiscEquipSlots, NetItem.MiscEquipIndex.Item1, NetItem.MiscEquipSlots);
-        SetItem(plr, tplr.miscDyes, MiscDyeSlots, NetItem.MiscDyeIndex.Item1, NetItem.MiscDyeSlots);
-        SetItem(plr, tplr.bank.item, PiggySlots, NetItem.PiggyIndex.Item1, NetItem.PiggySlots);
-        SetItem(plr, tplr.bank2.item, SafeSlots, NetItem.SafeIndex.Item1, NetItem.SafeSlots);
-        SetItem(plr, tplr.bank3.item, ForgeSlots, NetItem.ForgeIndex.Item1, NetItem.ForgeSlots);
-        SetItem(plr, tplr.bank4.item, VoidSlots, NetItem.VoidIndex.Item1, NetItem.VoidSlots);
-        SetItem(plr, tplr.Loadouts[0].Armor, loadout1Armor, NetItem.Loadout1Armor.Item1, NetItem.LoadoutArmorSlots);
-        SetItem(plr, tplr.Loadouts[0].Dye, Loadout1Dye, NetItem.Loadout1Dye.Item1, NetItem.LoadoutDyeSlots);
-        SetItem(plr, tplr.Loadouts[1].Armor, loadout2Armor, NetItem.Loadout2Armor.Item1, NetItem.LoadoutArmorSlots);
-        SetItem(plr, tplr.Loadouts[1].Dye, loadout2Dye, NetItem.Loadout2Dye.Item1, NetItem.LoadoutDyeSlots);
-        SetItem(plr, tplr.Loadouts[2].Armor, loadout3Armor, NetItem.Loadout3Armor.Item1, NetItem.LoadoutArmorSlots);
-        SetItem(plr, tplr.Loadouts[2].Dye, loadout3Dye, NetItem.Loadout3Dye.Item1, NetItem.LoadoutDyeSlots);
-
+        SetItem(plr, tplr.inventory, my.inventory, NetItem.InventoryIndex.Item1, NetItem.InventorySlots);
+        SetItem(plr, tplr.armor, my.armor, NetItem.ArmorIndex.Item1, NetItem.ArmorSlots);
+        SetItem(plr, tplr.miscEquips, my.miscEquip, NetItem.MiscEquipIndex.Item1, NetItem.MiscEquipSlots);
+        SetItem(plr, tplr.bank.item, my.piggy, NetItem.PiggyIndex.Item1, NetItem.PiggySlots);
+        SetItem(plr, tplr.Loadouts[1].Armor, my.loadout2Armor, NetItem.Loadout2Armor.Item1, NetItem.LoadoutArmorSlots);
+        SetItem(plr, tplr.Loadouts[2].Armor, my.loadout3Armor, NetItem.Loadout3Armor.Item1, NetItem.LoadoutArmorSlots);
     }
     #endregion
 
@@ -430,7 +278,7 @@ public class RoleSelection : TerrariaPlugin
     public static void SetBuff(TSPlayer plr)
     {
         var data = DB.GetData(plr.Name);
-        if (data == null) return;
+        if (data == null || !Config.Enabled) return;
 
         var timeLimit = (int.MaxValue / 60 / 60) - 1;
 

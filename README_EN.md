@@ -7,6 +7,14 @@
 ## Update Log
 
 ```
+v1.0.4
+Optimized code performance by inheriting PlayerData to save players' role items.
+Improved the logic of /rl add command, allowing new role data to be added directly from the user's inventory (less dependency on configuration file editing).
+The above improvements were contributed by “少司命” (Shaosiming).
+Enhanced /rl list and /rl all commands (showing 1 role and player per page).
+Using /rl list, you can see if you own a specific role - it displays (yes) alongside your data if you do, or (no) showing preset configuration data if not.
+/rl all will only display information about the roles currently being used by the player.
+
 v1.0.3
 Optimized Performance: Improved the execution performance of the /rl up command.
 Bug Fixes:

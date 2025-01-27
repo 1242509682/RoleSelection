@@ -16,34 +16,35 @@ namespace RoleSelection
         public List<int> ExemptList { get; set; } = new List<int>();
         [JsonProperty("数据储存", Order = 4)]
         public bool UseDBSave { get; set; } = true;
-        [JsonProperty("角色表", Order = 6)]
+        [JsonProperty("角色表", Order = 5)]
         public List<MyData> MyDataList { get; set; } = new List<MyData>();
         #endregion
 
         #region 角色数据结构
-        public class MyData
+        public class MyData : PlayerData
         {
-            [JsonProperty("角色名", Order = 0)]
+            [JsonProperty("角色名", Order = -30)]
             public string Role { get; set; } = "";
-            [JsonProperty("生命值", Order = 1)]
-            public int maxHealth { get; set; } = 100;
-            [JsonProperty("魔力值", Order = 2)]
-            public int maxMana { get; set; } = 20;
-            [JsonProperty("Buff", Order = 3)]
+            [JsonProperty("生命值", Order = -29)]
+            public new int maxHealth { get; internal set; } = TShock.ServerSideCharacterConfig.Settings.StartingHealth;
+            [JsonProperty("魔力值", Order = -28)]
+            public new int maxMana { get; internal set; } = TShock.ServerSideCharacterConfig.Settings.StartingMana;
+            [JsonProperty("Buff", Order = -27)]
             public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
-            [JsonProperty("当前盔甲饰品", Order = 5)]
+            [JsonProperty("当前盔甲饰品", Order = -26)]
             public NetItem[] armor { get; internal set; } = Array.Empty<NetItem>();
-            [JsonProperty("第2套盔甲饰品", Order = 6)]
+            [JsonProperty("第2套盔甲饰品", Order = -25)]
             public NetItem[] loadout2Armor { get; internal set; } = Array.Empty<NetItem>();
-            [JsonProperty("第3套盔甲饰品", Order = 7)]
+            [JsonProperty("第3套盔甲饰品", Order = -24)]
             public NetItem[] loadout3Armor { get; internal set; } = Array.Empty<NetItem>();
-            [JsonProperty("玩家背包表", Order = 8)]
-            public NetItem[] inventory { get; internal set; } = TShock.ServerSideCharacterConfig.Settings.StartingInventory.ToArray();
-            [JsonProperty("猪猪存钱罐", Order = 9)]
-            public NetItem[] PiggySlots { get; internal set; } = Array.Empty<NetItem>();
-            [JsonProperty("装备工具栏", Order = 10)]
-            public NetItem[] MiscEquipSlots { get; internal set; } = Array.Empty<NetItem>();
+            [JsonProperty("玩家背包表", Order = -23)]
+            public new NetItem[] inventory { get; internal set; } = new RoleData().inventory;
+            [JsonProperty("猪猪存钱罐", Order = -22)]
+            public NetItem[] piggy { get; internal set; } = Array.Empty<NetItem>();
+            [JsonProperty("装备工具栏", Order = -21)]
+            public NetItem[] miscEquip { get; internal set; } = Array.Empty<NetItem>();
 
+            public MyData() : base(new TSPlayer(-1)) { }
         }
         #endregion
 
@@ -53,14 +54,14 @@ namespace RoleSelection
             ExemptList = new List<int>() { 71 };
             MyDataList = new List<MyData>()
             {
-                new MyData()
+                new MyData() 
                 {
                     Role = "萌新",
                     maxHealth = TShock.ServerSideCharacterConfig.Settings.StartingHealth,
                     maxMana = TShock.ServerSideCharacterConfig.Settings.StartingMana,
                     Buff = new Dictionary<int, int>(){ { 11, -1 } },
                     inventory = TShock.ServerSideCharacterConfig.Settings.StartingInventory.ToArray(),
-                    MiscEquipSlots = new[]{ new NetItem(5098,1,0),}
+                    miscEquip = new[]{ new NetItem(5098,1,0),}
                 },
 
                 new MyData()
@@ -120,7 +121,7 @@ namespace RoleSelection
                         new NetItem(4062, 1, 83),
                     },
 
-                    MiscEquipSlots = new[]{ new NetItem(0,0,0), new NetItem(115, 1,0) }
+                    miscEquip = new[]{ new NetItem(0,0,0), new NetItem(115, 1,0) }
                 },
 
                 new MyData()
