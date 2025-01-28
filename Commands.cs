@@ -99,16 +99,23 @@ public class Commands
                             }
                             else
                             {
-                                var NewRole = TShock.CharacterDB.GetPlayerData(plr, plr.Account.ID);
-                                var NewData = new MyData()
+                                var NewData = TShock.CharacterDB.GetPlayerData(plr, plr.Account.ID);
+                                var NewRole = new MyData()
                                 {
                                     Role = role,
                                     maxHealth = plr.TPlayer.statLifeMax,
                                     maxMana = plr.TPlayer.statManaMax,
-                                    inventory = NewRole.inventory
+                                    Buff = new Dictionary<int, int>(),
+                                    inventory = NewData.inventory
                                 };
-                                NewRole.CopyCharacter(plr);
-                                Config.MyDataList.Add(NewData);
+
+                                //获取指令使用者身上BUFF
+                                for (var i = 0; i < plr.TPlayer.buffType.Length; i++)
+                                    if (plr.TPlayer.buffTime[i] > 0 && plr.TPlayer.buffType[i] > 0)
+                                        NewRole.Buff.Add(plr.TPlayer.buffType[i], plr.TPlayer.buffTime[i]);
+
+                                NewData.CopyCharacter(plr);
+                                Config.MyDataList.Add(NewRole);
                                 Config.Write();
                                 TShock.Utils.Broadcast($"管理员 [c/4792DD:{plr.Name}] 已添加新角色:[c/47DDD0:{role}]",240,250,150);
                             }
