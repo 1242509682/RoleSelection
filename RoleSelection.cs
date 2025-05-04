@@ -2,6 +2,7 @@
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
+using Terraria.ID;
 using static RoleSelection.Configuration;
 
 namespace RoleSelection;
@@ -12,13 +13,13 @@ public class RoleSelection : TerrariaPlugin
     #region 插件信息
     public override string Name => "角色选择系统";
     public override string Author => "SAP 羽学 少司命";
-    public override Version Version => new Version(1, 0, 4);
+    public override Version Version => new Version(1, 0, 5);
     public override string Description => "使用指令选择角色存档";
     #endregion
 
     #region 全局变量
     internal static Configuration Config = new();
-    public static Database DB = new();
+    public static Database Db = new();
     #endregion
 
     #region 注册与释放
@@ -28,6 +29,7 @@ public class RoleSelection : TerrariaPlugin
     {
         LoadConfig();
         GeneralHooks.ReloadEvent += ReloadConfig;
+        GetDataHandlers.PlayerUpdate.Register(this.OnPlayerUpdate);
         GetDataHandlers.PlayerSpawn.Register(this.OnPlayerSpawn);
         ServerApi.Hooks.NetGreetPlayer.Register(this, this.OnGreetPlayer);
         TShockAPI.Commands.ChatCommands.Add(new Command("role.use", Commands.RoleCMD, "role", "class", "rl"));
@@ -38,6 +40,7 @@ public class RoleSelection : TerrariaPlugin
         if (disposing)
         {
             GeneralHooks.ReloadEvent -= ReloadConfig;
+            GetDataHandlers.PlayerUpdate.UnRegister(this.OnPlayerUpdate);
             GetDataHandlers.PlayerSpawn.UnRegister(this.OnPlayerSpawn);
             ServerApi.Hooks.NetGreetPlayer.Deregister(this, this.OnGreetPlayer);
             TShockAPI.Commands.ChatCommands.RemoveAll(x => x.CommandDelegate == Commands.RoleCMD);
@@ -76,7 +79,7 @@ public class RoleSelection : TerrariaPlugin
         var plr = TShock.Players[args.Who];
         if (plr == null || !plr.Active || !plr.IsLoggedIn || !plr.HasPermission("role.use") || !Config.Enabled) return;
 
-        var data = DB.GetData(plr.Name); //获取玩家数据方法
+        var data = Db.GetData(plr.Name); //获取玩家数据方法
         if (data == null) //如果没有获取到的玩家数据
         {
             data = new PlayerRole()
@@ -86,7 +89,7 @@ public class RoleSelection : TerrariaPlugin
                 Buff = new Dictionary<int, int>(),
             };
 
-            DB.AddPlayer(data); //添加新数据
+            Db.AddPlayer(data); //添加新数据
 
             //设置新玩家职业
             foreach (var role in Config.MyDataList)
@@ -123,10 +126,10 @@ public class RoleSelection : TerrariaPlugin
         }
         else
         {
-            var NewRole = new RoleData(plr, my.Role);
-            var roles = DB.GetRole(plr.Account.ID);
+            var newRole = new RoleData(plr, my.Role);
+            var roles = Db.GetRole(plr.Account.ID);
             var data2 = roles.FirstOrDefault(p => p.Role == my.Role);
-            var old = DB.GetData2(plr, data.Role);
+            var old = Db.GetData2(plr, data.Role);
 
             if (data2 == null)
             {
@@ -134,8 +137,8 @@ public class RoleSelection : TerrariaPlugin
                 SaveOldRole(plr, data, old);
                 ClearAll(plr);
                 ConfigRole(plr, my);
-                NewRole.CopyCharacter(plr);
-                DB.SetAndUpdate(plr, NewRole, my.Role);
+                newRole.CopyCharacter(plr);
+                Db.SetAndUpdate(plr, newRole, my.Role);
                 plr.SendMessage($"已添加角色 [c/F74F5D:{my.Role}]", 170, 170, 170);
             }
             else
@@ -152,7 +155,7 @@ public class RoleSelection : TerrariaPlugin
 
         data.Role = my.Role;
         data.Buff = my.Buff;
-        DB.UpdatePlayer(data);
+        Db.UpdatePlayer(data);
         SetBuff(plr); // 设置玩家BUFF
     }
     #endregion
@@ -163,7 +166,7 @@ public class RoleSelection : TerrariaPlugin
         if (!string.IsNullOrEmpty(data!.Role) && old != null)
         {
             old.CopyCharacter(plr);
-            DB.SetAndUpdate(plr, old, data.Role);
+            Db.SetAndUpdate(plr, old, data.Role);
             plr.SendMessage($"已保存角色 [c/5B9DE1:{data.Role}]", 170, 170, 170);
         }
     }
@@ -277,7 +280,7 @@ public class RoleSelection : TerrariaPlugin
     #region 设置BUFF方法
     public static void SetBuff(TSPlayer plr)
     {
-        var data = DB.GetData(plr.Name);
+        var data = Db.GetData(plr.Name);
         if (data == null || !Config.Enabled) return;
 
         var timeLimit = (int.MaxValue / 60 / 60) - 1;
@@ -289,6 +292,81 @@ public class RoleSelection : TerrariaPlugin
             if (time < 0 || time > timeLimit) time = timeLimit;
             plr.SetBuff(id, time * 60 * 60);
         }
+    }
+    #endregion
+
+    #region 移除非法物品方法
+    private void OnPlayerUpdate(object? sender, GetDataHandlers.PlayerUpdateEventArgs e)
+    {
+        var plr = e.Player;
+        if (plr == null || !plr.Active || !plr.IsLoggedIn || !Config.Enabled ||
+           !plr.HasPermission("role.use") || plr.HasPermission("role.admin")) return;
+
+        // 检查玩家当前武器类型
+        var Weapon = GetPlayerWeapon(plr.TPlayer);
+
+        // 检查玩家当前选中的物品
+        var Sel = plr.TPlayer.inventory[plr.TPlayer.selectedItem];
+
+        //排除空物品、物品ID为0、武器类型小于等于0、合法物品表的物品ID、免清物品表的物品ID
+        if (Sel.IsAir || Sel.type == 0 || Weapon <= 0 ||
+            Config.SecureItem.Contains(Sel.type) ||
+            Config.ExemptList.Contains(Sel.type)) return;
+
+        var Data = Db.GetData(plr.Name);
+
+        // 角色表不为空 清理非法物品开启 且该玩家数据不为空则进行检查
+        if (Config.MyDataList != null && Config.ClearItem && Data != null)
+        {
+            foreach (var role in Config.MyDataList)
+            {
+                //如果是当前角色允许使用的物品、或者是当前角色的武器类型小于等于0、与数据库记录的角色名不相同则跳过
+                if (role.AllowItem.Contains(Sel.type) || role.WeaponType <= 0 || Data.Role != role.Role) continue;
+
+                //如果是预设的物品ID则跳过
+                foreach (var item in role.inventory)
+                {
+                    if (Sel.type == item.NetId)
+                    {
+                        continue;
+                    }
+                }
+
+                // 检查玩家当前武器类型是否符合配置 属于禁止使用物品ID 正在使用物品 则触发清理惩罚
+                if ((role.WeaponType != Weapon || role.DisableItem.Contains(Sel.type)) && plr.TPlayer.controlUseItem &&
+                    plr.TPlayer.selectedItem >= 0 && plr.TPlayer.selectedItem < plr.TPlayer.inventory.Length)
+                {
+                    plr.SendInfoMessage($"【角色选择系统】当前角色禁止使用这个物品:{Lang.GetItemName(Sel.type)}");
+                    plr.TPlayer.inventory[plr.TPlayer.selectedItem].SetDefaults(0);
+                    NetMessage.SendData(5, -1, -1, null, plr.Index, plr.TPlayer.selectedItem);
+                }
+            }
+        }
+    }
+    #endregion
+
+    #region 获取玩家当前武器类型的逻辑
+    public static int GetPlayerWeapon(Player plr)
+    {
+        var Held = plr.HeldItem;
+        if (Held == null || Held.type == 0) return 0;
+
+        // 检查近战武器
+        if (Held.melee && Held.maxStack == 1 && Held.damage > 0 && Held.ammo == 0 &&
+            Held.pick < 1 && Held.hammer < 1 && Held.axe < 1) return 1;
+
+        // 检查远程武器
+        if (Held.ranged && Held.maxStack == 1 &&
+            Held.damage > 0 && Held.ammo == 0 && !Held.consumable) return 2;
+
+        // 检查魔法武器
+        if (Held.magic && Held.maxStack == 1 &&
+            Held.damage > 0 && Held.ammo == 0) return 3;
+
+        // 检查召唤鞭子
+        if (ItemID.Sets.SummonerWeaponThatScalesWithAttackSpeed[Held.type]) return 4;
+
+        return -1; // 默认未知
     }
     #endregion
 }

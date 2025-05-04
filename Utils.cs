@@ -1,7 +1,4 @@
-﻿using System.Text;
-using TShockAPI;
-using Microsoft.Xna.Framework;
-using Terraria;
+﻿using TShockAPI;
 
 namespace RoleSelection;
 

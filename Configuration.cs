@@ -16,15 +16,25 @@ namespace RoleSelection
         public List<int> ExemptList { get; set; } = new List<int>();
         [JsonProperty("数据储存", Order = 4)]
         public bool UseDBSave { get; set; } = true;
-        [JsonProperty("角色表", Order = 5)]
+        [JsonProperty("清理非法物品", Order = 5)]
+        public bool ClearItem { get; set; } = true;
+        [JsonProperty("合法物品表", Order = 6)]
+        public HashSet<int> SecureItem { get; set; } = new HashSet<int>();
+        [JsonProperty("角色表", Order = 7)]
         public List<MyData> MyDataList { get; set; } = new List<MyData>();
         #endregion
 
         #region 角色数据结构
         public class MyData : PlayerData
         {
-            [JsonProperty("角色名", Order = -30)]
+            [JsonProperty("角色名", Order = -33)]
             public string Role { get; set; } = "";
+            [JsonProperty("专属武器类型", Order = -32)]
+            public int WeaponType { get; set; } = 0;
+            [JsonProperty("允许使用物品ID", Order = -31)]
+            public HashSet<int> AllowItem { get; set; } = new HashSet<int>();
+            [JsonProperty("禁止使用物品ID", Order = -30)]
+            public HashSet<int> DisableItem { get; set; } = new HashSet<int>();
             [JsonProperty("生命值", Order = -29)]
             public new int maxHealth { get; internal set; } = TShock.ServerSideCharacterConfig.Settings.StartingHealth;
             [JsonProperty("魔力值", Order = -28)]
@@ -57,6 +67,7 @@ namespace RoleSelection
                 new MyData() 
                 {
                     Role = "萌新",
+                    WeaponType = 0,
                     maxHealth = TShock.ServerSideCharacterConfig.Settings.StartingHealth,
                     maxMana = TShock.ServerSideCharacterConfig.Settings.StartingMana,
                     Buff = new Dictionary<int, int>(){ { 11, -1 } },
@@ -67,6 +78,7 @@ namespace RoleSelection
                 new MyData()
                 {
                     Role = "战士",
+                    WeaponType = 1,
                     maxHealth = 400,
                     maxMana = 200,
                     Buff = new Dictionary<int, int>(){ { 25,-1 } },
@@ -86,6 +98,7 @@ namespace RoleSelection
                 new MyData()
                 {
                     Role = "射手",
+                    WeaponType = 2,
                     maxHealth = 400,
                     maxMana = 20,
                     Buff = new Dictionary<int, int>(){ { 112, -1 } },
@@ -106,6 +119,7 @@ namespace RoleSelection
                 new MyData()
                 {
                     Role = "法师",
+                    WeaponType = 3,
                     maxHealth = 400,
                     maxMana = 400,
                     Buff = new Dictionary<int, int>(){ { 6, -1 } },
@@ -127,6 +141,7 @@ namespace RoleSelection
                 new MyData()
                 {
                     Role = "召唤",
+                    WeaponType = 4,
                     maxHealth = 400,
                     maxMana = 200,
                     Buff = new Dictionary<int, int>(){ { 110, -1 } },

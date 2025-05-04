@@ -16,7 +16,7 @@ public class Commands
     public static void RoleCMD(CommandArgs args)
     {
         var plr = args.Player;
-        var data = DB.GetData(plr.Name); //获取玩家自己的数据
+        var data = Db.GetData(plr.Name); //获取玩家自己的数据
 
         //子命令数量为0时
         if (args.Parameters.Count == 0) Help(plr, data);
@@ -138,7 +138,7 @@ public class Commands
                             var other = TShock.UserAccounts.GetUserAccountByName(args.Parameters[1]);
                             var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Account.ID == other.ID);
                             if (plr2 == null) return;
-                            var data2 = DB.GetData(other.Name);
+                            var data2 = Db.GetData(other.Name);
 
                             var isIndex = int.TryParse(args.Parameters[2], out var index);
                             if (isIndex) // 如果参数是索引
@@ -189,7 +189,7 @@ public class Commands
                                 RestorePlayer(role); //删除角色时帮玩家回到萌新角色方法
                                 Config.MyDataList.RemoveAt(index - 1);
                                 Config.Write();
-                                DB.DelRole(role.Role);
+                                Db.DelRole(role.Role);
                                 plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
                                 break;
                             }
@@ -203,7 +203,7 @@ public class Commands
                                     RestorePlayer(role); //删除角色时帮玩家回到萌新角色方法
                                     Config.MyDataList.RemoveAt(i);
                                     Config.Write();
-                                    DB.DelRole(role.Role);
+                                    Db.DelRole(role.Role);
                                     plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
 
                                     break;
@@ -228,7 +228,7 @@ public class Commands
                         {
                             var other = TShock.UserAccounts.GetUserAccountByName(args.Parameters[1]);
                             var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Account.ID == other.ID);
-                            var data2 = DB.GetData(other.Name);
+                            var data2 = Db.GetData(other.Name);
                             if (data2 != null)
                             {
                                 if (plr2 != null)
@@ -240,10 +240,10 @@ public class Commands
                                     TShock.DB.Query($"DELETE FROM tsCharacter WHERE Account = {other.ID}");
                                 }
 
-                                DB.DelPlayer(other.Name);
+                                Db.DelPlayer(other.Name);
                                 foreach (var role in Config.MyDataList)
                                 {
-                                    DB.RmPlayer(other.ID, role.Role);
+                                    Db.RmPlayer(other.ID, role.Role);
                                 }
                             }
                         }
@@ -280,6 +280,18 @@ public class Commands
                     }
                     break;
 
+                case "cl":
+                case "clear":
+                    if (plr.HasPermission("role.admin"))
+                    {
+                        var enabled = Config.ClearItem;
+                        Config.ClearItem = !enabled;
+                        var text = enabled ? "[c/F86470:禁用]" : "[c/73E55C:启用]";
+                        Config.Write();
+                        plr.SendMessage($"已{text}非法物品清理功能。", 170, 170, 170);
+                    }
+                    break;
+
                 case "rs":
                 case "reset":
                 case "重置":
@@ -297,11 +309,11 @@ public class Commands
 
                             foreach (var role in Config.MyDataList)
                             {
-                                DB.RmPlayer(acc.ID, role.Role);
+                                Db.RmPlayer(acc.ID, role.Role);
                             }
                         }
 
-                        DB.ClearData();
+                        Db.ClearData();
                         plr.SendMessage("已清空玩家数据表", 240, 250, 150);
                     }
                     break;
@@ -329,6 +341,7 @@ public class Commands
                             "/rl del 角色名 ——移除角色\n" +
                             "/rl rm 玩家名 ——移除指定玩家数据\n" +
                             "/rl db ——开启|关闭数据存储\n" +
+                            "/rl cl ——开启|关闭非法物品清理\n" +
                             "/rl reset ——清空所有玩家数据表", 240, 250, 150);
         }
         else
@@ -354,10 +367,10 @@ public class Commands
         var user = TShock.UserAccounts.GetUserAccounts();
         foreach (var acc in user)
         {
-            DB.RmPlayer(acc.ID, role.Role);
+            Db.RmPlayer(acc.ID, role.Role);
             var cdata = Config.MyDataList.FirstOrDefault();
             if (cdata == null) continue;
-            var data = DB.GetData(acc.Name);
+            var data = Db.GetData(acc.Name);
             if (data != null && data.Role == role.Role)
             {
                 var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Name == acc.Name);
@@ -367,14 +380,14 @@ public class Commands
                     ClearAll(plr2); //清除所有
                     ConfigRole(plr2, cdata); //设置配置文件里的物品
                     data.Role = cdata.Role;
-                    DB.UpdatePlayer(data);
+                    Db.UpdatePlayer(data);
                     SetBuff(plr2); //设置玩家BUFF
                 }
                 else
                 {
                     TShock.DB.Query($"DELETE FROM tsCharacter WHERE Account = {acc.ID}");
                     data.Role = cdata.Role;
-                    DB.UpdatePlayer(data);
+                    Db.UpdatePlayer(data);
                 }
             }
         }
@@ -432,7 +445,7 @@ public class Commands
                     string AmoText;
                     string miscEquip;
                     string pigText;
-                    var DBRole = DB.GetRole(plr.Account.ID);
+                    var DBRole = Db.GetRole(plr.Account.ID);
                     var db = DBRole.FirstOrDefault(x => x.Role == my.Role);
                     if (DBRole != null && db != null)
                     {
@@ -507,7 +520,7 @@ public class Commands
     #region 列出所有玩家当前角色
     private static void ListAll(TSPlayer plr, int page2)
     {
-        var datas = DB.GetAllData();
+        var datas = Db.GetAllData();
         if (datas == null || !datas.Any())
         {
             plr.SendMessage("没有找到任何玩家数据。", 240, 250, 150);
@@ -538,7 +551,7 @@ public class Commands
 
         if (!string.IsNullOrEmpty(data2.Role))
         {
-            var dbRole = DB.GetRole(plr.Account.ID).FirstOrDefault(x => x.Role == data2.Role);
+            var dbRole = Db.GetRole(plr.Account.ID).FirstOrDefault(x => x.Role == data2.Role);
             if (dbRole != null)
             {
                 mess.Append($"生命:[c/F7636F:{dbRole.maxHealth}] ");
