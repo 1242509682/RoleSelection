@@ -1,8 +1,8 @@
 ﻿using Terraria;
+using Terraria.ID;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
-using Terraria.ID;
 using static RoleSelection.Configuration;
 
 namespace RoleSelection;
@@ -13,7 +13,7 @@ public class RoleSelection : TerrariaPlugin
     #region 插件信息
     public override string Name => "角色选择系统";
     public override string Author => "SAP 羽学 少司命";
-    public override Version Version => new Version(1, 0, 5);
+    public override Version Version => new Version(1, 0, 6);
     public override string Description => "使用指令选择角色存档";
     #endregion
 
@@ -77,30 +77,10 @@ public class RoleSelection : TerrariaPlugin
     private void OnGreetPlayer(GreetPlayerEventArgs args)
     {
         var plr = TShock.Players[args.Who];
+        var data = Db.GetData(plr.Name); //获取玩家数据方法
         if (plr == null || !plr.Active || !plr.IsLoggedIn || !plr.HasPermission("role.use") || !Config.Enabled) return;
 
-        var data = Db.GetData(plr.Name); //获取玩家数据方法
-        if (data == null) //如果没有获取到的玩家数据
-        {
-            data = new PlayerRole()
-            {
-                Name = plr.Name,
-                Role = "萌新",
-                Buff = new Dictionary<int, int>(),
-            };
-
-            Db.AddPlayer(data); //添加新数据
-
-            //设置新玩家职业
-            foreach (var role in Config.MyDataList)
-            {
-                if (data.Role == role.Role)
-                {
-                    Rank(plr, data, role);
-                }
-            }
-        }
-        else
+        if(data != null)
         {
             SetBuff(plr);
         }
@@ -261,7 +241,6 @@ public class RoleSelection : TerrariaPlugin
         // 清空玩家所有BUFF
         Array.Clear(tplr.buffType, 0, tplr.buffType.Length);
         plr.SendData(PacketTypes.PlayerBuff, "", plr.Index);
-
     }
 
     private static void ClearSlots(Item[] items)
@@ -295,12 +274,19 @@ public class RoleSelection : TerrariaPlugin
     }
     #endregion
 
-    #region 移除非法物品方法
+    #region 玩家更新方法（给新玩家建数据 + 移除非法物品方法）
     private void OnPlayerUpdate(object? sender, GetDataHandlers.PlayerUpdateEventArgs e)
     {
         var plr = e.Player;
         if (plr == null || !plr.Active || !plr.IsLoggedIn || !Config.Enabled ||
            !plr.HasPermission("role.use") || plr.HasPermission("role.admin")) return;
+
+        var data = Db.GetData(plr.Name); //帮玩家建数据方法
+        if (data == null)
+        {
+            data = CreateData(plr);
+            plr.SendMessage($"欢迎使用角色选择系统，新玩家请使用指令查看菜单:[c/FEF766:/rl]", 170, 170, 170);
+        }
 
         // 检查玩家当前武器类型
         var Weapon = GetPlayerWeapon(plr.TPlayer);
@@ -368,5 +354,29 @@ public class RoleSelection : TerrariaPlugin
 
         return -1; // 默认未知
     }
+    #endregion
+
+    #region 帮玩家建数据方法
+    public static PlayerRole CreateData(TSPlayer plr)
+    {
+        PlayerRole? data = new PlayerRole()
+        {
+            Name = plr.Name,
+            Role = "萌新",
+            Buff = new Dictionary<int, int>(),
+        };
+        Db.AddPlayer(data); //添加新数据
+
+        //设置新玩家职业
+        foreach (var role in Config.MyDataList)
+        {
+            if (data.Role == role.Role)
+            {
+                Rank(plr, data, role);
+            }
+        }
+
+        return data;
+    } 
     #endregion
 }

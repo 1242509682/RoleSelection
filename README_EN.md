@@ -7,6 +7,28 @@
 ## Update Log
 
 ```
+v1.0.6
+This version was compiled and released using the Nuget package of TShock 5.2.1 API.
+Fixed an issue where the `/rl all` command couldn't view other players' role inventory.
+Fixed an issue where the player name wasn't saved in the RoleData table.
+Fixed a bug where new registered players wouldn't have data created upon joining, making `/rl up` unusable.
+When clearing player data with `/rl rs`, it's no longer necessary for the player to rejoin; using `/rl` again will automatically create the data.
+
+v1.0.5
+This version was compiled and released using the Nuget package of TShock 5.2.1 API.
+If there are bugs, users should update their Nuget according to their TShock version.
+Added the ["Clear Illegal Items"] configuration option. When enabled:
+Players using items from ["Exclusive Weapon Types"], ["Safe Item List"], ["Exempt Clear List"], or ["Allowed Items"] won't be penalized.
+["Exclusive Weapon Types"]: 1-Melee / 2-Ranged / 3-Magic / 4-Summon (0 and -1 won't incur penalties).
+Otherwise, using items from ["Prohibited Items"] or not belonging to ["Exclusive Weapon Types"] will result in immediate clearance.
+This penalty only applies to players with the ["role.use"] permission; those with ["role.admin"] are immune.
+Note: This penalty only takes effect when ["Data Storage"] is enabled;
+["Legal Item List"] includes all items obtained by characters in the game that won't incur clearance penalties;
+["Exempt Clear List"] includes items retained even when switching roles (both lists don't conflict).
+Items already configured in the backpack list won't be cleared either, such as the Warrior's Star Wrath.
+The clearance penalty only affects items currently being used; other items remain unaffected.
+This function can be toggled via the `/rl cl` command.
+
 v1.0.4
 Optimized code performance by inheriting PlayerData to save players' role items.
 Improved the logic of /rl add command, allowing new role data to be added directly from the user's inventory (less dependency on configuration file editing).
@@ -59,7 +81,7 @@ A small plugin improved for SAP, mainly for PVP servers.
 
 | Syntax                             | Alias  |       Permission       |                   Description                   |
 | -------------------------------- | :---: | :--------------: | :--------------------------------------: |
-| /rl  | None |   role.use    |    Command menu    |
+| /rl  | None |   role.use    |    Command menu and create data   |
 | /rl up <role/number> | /rl <number> |   role.use    |    Select character    |
 | /rl list | /rl l |   role.use    |    List existing characters    |
 | /rl all | /rl al |   role.use    |    List other players' characters    |
@@ -75,25 +97,30 @@ A small plugin improved for SAP, mainly for PVP servers.
 > Configuration file location： tshock/角色选择系统.json
 ```json
 {
-  "Plugin Switch": true,
+  "Plugin Enabled": true,
   "Clear Coins": false,
-  "Clear Inventory on Join": false,
-  "Items Not to Clear": [
+  "Clear Backpack on Join": false,
+  "Exempt Clear List": [
     71
   ],
   "Data Storage": true,
-  "Roles Table": [
+  "Clear Illegal Items": true,
+  "Legal Item List": [],
+  "Role Table": [
     {
       "Role Name": "Newbie",
-      "Health": 100,
-      "Mana": 20,
-      "Buff": {
+      "Exclusive Weapon Type": 0,
+      "Allowed Items": [],
+      "Prohibited Items": [],
+      "HP": 100,
+      "MP": 20,
+      "Buffs": {
         "11": -1
       },
       "Current Armor Accessories": [],
-      "Second Set of Armor Accessories": [],
-      "Third Set of Armor Accessories": [],
-      "Player Backpack": [
+      "Second Set Armor Accessories": [],
+      "Third Set Armor Accessories": [],
+      "Player Inventory": [
         {
           "netID": -15,
           "prefix": 0,
@@ -116,7 +143,7 @@ A small plugin improved for SAP, mainly for PVP servers.
         }
       ],
       "Piggy Bank": [],
-      "Equipped Toolbar": [
+      "Equipment Toolbar": [
         {
           "netID": 5098,
           "prefix": 0,
@@ -126,9 +153,12 @@ A small plugin improved for SAP, mainly for PVP servers.
     },
     {
       "Role Name": "Warrior",
-      "Health": 400,
-      "Mana": 200,
-      "Buff": {
+      "Exclusive Weapon Type": 1,
+      "Allowed Items": [],
+      "Prohibited Items": [],
+      "HP": 400,
+      "MP": 200,
+      "Buffs": {
         "25": -1
       },
       "Current Armor Accessories": [
@@ -148,9 +178,9 @@ A small plugin improved for SAP, mainly for PVP servers.
           "stack": 1
         }
       ],
-      "Second Set of Armor Accessories": [],
-      "Third Set of Armor Accessories": [],
-      "Player Backpack": [
+      "Second Set Armor Accessories": [],
+      "Third Set Armor Accessories": [],
+      "Player Inventory": [
         {
           "netID": 65,
           "prefix": 81,
@@ -158,7 +188,145 @@ A small plugin improved for SAP, mainly for PVP servers.
         }
       ],
       "Piggy Bank": [],
-      "Equipped Toolbar": []
+      "Equipment Toolbar": []
+    },
+    {
+      "Role Name": "Archer",
+      "Exclusive Weapon Type": 2,
+      "Allowed Items": [],
+      "Prohibited Items": [],
+      "HP": 400,
+      "MP": 20,
+      "Buffs": {
+        "112": -1
+      },
+      "Current Armor Accessories": [
+        {
+          "netID": 3374,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 3375,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 3376,
+          "prefix": 0,
+          "stack": 1
+        }
+      ],
+      "Second Set Armor Accessories": [],
+      "Third Set Armor Accessories": [],
+      "Player Inventory": [
+        {
+          "netID": 964,
+          "prefix": 82,
+          "stack": 1
+        },
+        {
+          "netID": 1349,
+          "prefix": 0,
+          "stack": 9999
+        }
+      ],
+      "Piggy Bank": [],
+      "Equipment Toolbar": []
+    },
+    {
+      "Role Name": "Mage",
+      "Exclusive Weapon Type": 3,
+      "Allowed Items": [],
+      "Prohibited Items": [],
+      "HP": 400,
+      "MP": 400,
+      "Buffs": {
+        "6": -1
+      },
+      "Current Armor Accessories": [
+        {
+          "netID": 228,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 229,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 230,
+          "prefix": 0,
+          "stack": 1
+        }
+      ],
+      "Second Set Armor Accessories": [],
+      "Third Set Armor Accessories": [],
+      "Player Inventory": [
+        {
+          "netID": 4062,
+          "prefix": 83,
+          "stack": 1
+        }
+      ],
+      "Piggy Bank": [],
+      "Equipment Toolbar": [
+        {
+          "netID": 0,
+          "prefix": 0,
+          "stack": 0
+        },
+        {
+          "netID": 115,
+          "prefix": 0,
+          "stack": 1
+        }
+      ]
+    },
+    {
+      "Role Name": "Summoner",
+      "Exclusive Weapon Type": 4,
+      "Allowed Items": [],
+      "Prohibited Items": [],
+      "HP": 400,
+      "MP": 200,
+      "Buffs": {
+        "110": -1
+      },
+      "Current Armor Accessories": [
+        {
+          "netID": 238,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 5068,
+          "prefix": 0,
+          "stack": 1
+        },
+        {
+          "netID": 5001,
+          "prefix": 0,
+          "stack": 1
+        }
+      ],
+      "Second Set Armor Accessories": [],
+      "Third Set Armor Accessories": [],
+      "Player Inventory": [
+        {
+          "netID": 4913,
+          "prefix": 81,
+          "stack": 1
+        },
+        {
+          "netID": 4273,
+          "prefix": 83,
+          "stack": 1
+        }
+      ],
+      "Piggy Bank": [],
+      "Equipment Toolbar": []
     }
   ]
 }

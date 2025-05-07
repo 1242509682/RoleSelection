@@ -304,7 +304,7 @@ public class Commands
                             if (plr2 != null)
                             {
                                 ClearAll(plr2); //清除所有物品
-                                plr2.SendMessage("您的角色已被重置，请重进服务器", 240, 250, 150);
+                                plr2.SendMessage("您的角色已被重置，请重进服务器或使用一次指令:/rl", 240, 250, 150);
                             }
 
                             foreach (var role in Config.MyDataList)
@@ -355,6 +355,11 @@ public class Commands
 
         if (data != null)
         {
+            plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
+        }
+        else if(plr != TSPlayer.Server) //帮新注册的玩家建数据 双保险
+        {
+            data = CreateData(plr);
             plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
         }
 
@@ -551,7 +556,14 @@ public class Commands
 
         if (!string.IsNullOrEmpty(data2.Role))
         {
-            var dbRole = Db.GetRole(plr.Account.ID).FirstOrDefault(x => x.Role == data2.Role);
+            var acc = TShock.UserAccounts.GetUserAccountByName(data2.Name);
+            if (acc == null)
+            {
+                plr.SendMessage($"无法找到玩家 {data2.Name} 的账号信息。", 255, 100, 100);
+                return;
+            }
+            var roles = Db.GetRole(acc.ID); // 获取该玩家的所有角色
+            var dbRole = roles.FirstOrDefault(x => x.Role == data2.Role);
             if (dbRole != null)
             {
                 mess.Append($"生命:[c/F7636F:{dbRole.maxHealth}] ");
@@ -595,12 +607,12 @@ public class Commands
         var all = mess.ToString();
         if (page2 < MaxPages)
         {
-            var prompt = $"请输入 [c/68A7E8:/rl all {page2 + 1}] 查看下一个";
+            var prompt = $"\n请输入 [c/68A7E8:/rl all {page2 + 1}] 查看下一个";
             all += $"{prompt}";
         }
         else if (page2 > MaxPages)
         {
-            var prompt = $"请输入 [c/68A7E8:/rl all {page2 - 1}] 查看上一个";
+            var prompt = $"\n请输入 [c/68A7E8:/rl all {page2 - 1}] 查看上一个";
             all += $"{prompt}";
         }
 
