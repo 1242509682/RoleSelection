@@ -84,6 +84,10 @@ public class RoleSelection : TerrariaPlugin
         {
             SetBuff(plr);
         }
+        else
+        {
+            CreateData(plr);
+        }
 
         if (Config.JoinClearItem) //进服清理一切
         {
