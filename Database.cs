@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
+using Terraria.Net.Sockets;
 using TShockAPI;
 using TShockAPI.DB;
 using static MonoMod.InlineRT.MonoModRule;
@@ -11,11 +12,13 @@ public class PlayerRole
 {
     public string Name { get; set; } = ""; // 玩家名字
     public string Role { get; set; } = "无"; // 角色名称
+    public bool Lock = false; // 是否锁定
     public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
-    public PlayerRole(string name = "", string role = "无", Dictionary<int, int> buff = null!)
+    public PlayerRole(string name = "", string role = "无",bool Lock = false, Dictionary<int, int> buff = null!)
     {
         this.Name = name ?? "";
         this.Role = role ?? "无";
+        this.Lock = Lock;
         this.Buff = buff ?? new Dictionary<int, int>();
     }
 }
@@ -38,6 +41,7 @@ public class Database
                 Unique = true
             },
             new SqlColumn("Role", MySqlDbType.Text),
+            new SqlColumn("Lock", MySqlDbType.Int32) { DefaultValue = "0" }, // bool值列
             new SqlColumn("Buff", MySqlDbType.Text)
         ));
 
@@ -89,15 +93,20 @@ public class Database
     public bool AddPlayer(PlayerRole data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
-        return TShock.DB.Query("INSERT INTO " + RolePlayer + " (Name, Role, Buff) VALUES (@0, @1, @2)",
-        data.Name, data.Role, buff) != 0;
+        return TShock.DB.Query("INSERT INTO " + RolePlayer + " (Name, Role, Lock, Buff) VALUES (@0, @1, @2, @3)",
+        data.Name, data.Role, data.Lock ? 1 : 0, buff) != 0;
     }
 
     public bool UpdatePlayer(PlayerRole data)
     {
         var buff = JsonConvert.SerializeObject(data.Buff);
-        return TShock.DB.Query("UPDATE " + RolePlayer + " SET Role = @0, Buff = @1 WHERE Name = @2",
-            data.Role, buff, data.Name) != 0;
+        return TShock.DB.Query("UPDATE " + RolePlayer + " SET Role = @0, Lock = @1, Buff = @2 WHERE Name = @3",
+            data.Role, data.Lock ? 1 : 0, buff, data.Name) != 0;
+    }
+
+    public bool RoleLock(string name, bool Locks)
+    {
+       return TShock.DB.Query("UPDATE RolePlayer SET Lock = @0 WHERE Name = @1", Locks ? 1 : 0, name) != 0;
     }
     #endregion
 
@@ -111,6 +120,7 @@ public class Database
             return new PlayerRole(
                 name: reader.Get<string>("Name"),
                 role: reader.Get<string>("Role"),
+                Lock: reader.Get<bool>("Lock"),
                 buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
             );
         }
@@ -128,6 +138,7 @@ public class Database
                 data.Add(new PlayerRole(
                     name: reader.Get<string>("Name"),
                     role: reader.Get<string>("Role"),
+                    Lock: reader.Get<bool>("Lock"),
                     buff: JsonConvert.DeserializeObject<Dictionary<int, int>>(reader.Get<string>("Buff"))!
                 ));
             }

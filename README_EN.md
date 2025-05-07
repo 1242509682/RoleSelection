@@ -7,6 +7,11 @@
 ## Update Log
 
 ```
+v1.0.7
+Added role lock functionality to the `/rl s` command:
+Use **`/rl s <PlayerName> <RoleName> -L`** to lock or unlock a player’s ability to switch roles.
+When locked, the player will be unable to use `/rl up` to change their current role.
+
 v1.0.6
 This version was compiled and released using the Nuget package of TShock 5.2.1 API.
 Fixed an issue where the `/rl all` command couldn't view other players' role inventory.
@@ -86,6 +91,7 @@ A small plugin improved for SAP, mainly for PVP servers.
 | /rl list | /rl l |   role.use    |    List existing characters    |
 | /rl all | /rl al |   role.use    |    List other players' characters    |
 | /rl set <player name> <role> | /rl s |   role.admin    |    Modify specified player's character    |
+| /rl set <player name> <role> -L | /rl s -L |   role.admin    |    Lock or unlock the player from switching roles    |
 | /rl add <role> | /rl a |   role.admin    |    Add character    |
 | /rl del <role> | /rl d |   role.admin    |    Remove character    |
 | /rl rm <player name> | /rl r |   role.admin    |    Remove specified player's data    |

@@ -7,6 +7,11 @@
 ## 更新日志
 
 ```
+v1.0.7
+给/rl s 指令补充锁定功能：
+使用【/rl s 玩家名 角色名 -L】
+可以锁定或者解锁：玩家使用指定角色，无法使用/rl up 指令进行切换
+
 v1.0.6
 本版本使用TShock 5.2.1 API版本的Nuget包进行编译发布
 修复/rl all指令无法查看其他玩家的角色背包BUG
@@ -85,11 +90,12 @@ v1.0.0
 | /rl list | /rl l |   role.use    |    列出已有角色    |
 | /rl all | /rl al |   role.use    |    列出其他玩家角色    |
 | /rl set 玩家名 角色名 | /rl s 玩家名 角色名 |   role.admin    |    修改指定玩家角色    |
+| /rl set 玩家名 角色名 -L | /rl s 玩家名 角色名 -L |   role.admin    |    锁定或解锁指定玩家角色    |
 | /rl add 角色名 | /rl a 角色名 |   role.admin    |    添加角色    |
 | /rl del 角色名 | /rl d 角色名 |   role.admin    |    删除角色    |
 | /rl rm 玩家名 | /rl r 玩家名 |   role.admin    |    移除指定玩家数据    |
 | /rl reset | /rl rs |   role.admin    |    清空所有玩家数据表    |
-| /rl cl | 无 |   role.admin    |    开启或关闭非法物品清理    |
+| /rl cl | /rl clear |   role.admin    |    开启或关闭非法物品清理    |
 | /rl db | 无 |   role.admin    |    开启或关闭数据存储    |
 | /reload  | 无 |   tshock.cfg.reload    |    重载配置文件    |
 

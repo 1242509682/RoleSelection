@@ -40,6 +40,13 @@ public class Commands
                     {
                         if (args.Parameters.Count >= 2)
                         {
+                            //如果玩家被锁定角色则不执行任何操作
+                            if (data.Lock)
+                            {
+                                plr.SendMessage($"你已被锁定 {data.Role} 角色，无法切换！", 255, 50, 50);
+                                return;
+                            }
+
                             var isIndex = int.TryParse(args.Parameters[1], out var index);
 
                             if (isIndex) // 如果参数是索引
@@ -117,7 +124,7 @@ public class Commands
                                 NewData.CopyCharacter(plr);
                                 Config.MyDataList.Add(NewRole);
                                 Config.Write();
-                                TShock.Utils.Broadcast($"管理员 [c/4792DD:{plr.Name}] 已添加新角色:[c/47DDD0:{role}]",240,250,150);
+                                TShock.Utils.Broadcast($"管理员 [c/4792DD:{plr.Name}] 已添加新角色:[c/47DDD0:{role}]", 240, 250, 150);
                             }
                         }
                         else
@@ -139,7 +146,6 @@ public class Commands
                             var plr2 = TShock.Players.FirstOrDefault(p => p != null && p.IsLoggedIn && p.Active && p.Account.ID == other.ID);
                             if (plr2 == null) return;
                             var data2 = Db.GetData(other.Name);
-
                             var isIndex = int.TryParse(args.Parameters[2], out var index);
                             if (isIndex) // 如果参数是索引
                             {
@@ -158,15 +164,25 @@ public class Commands
                                 {
                                     if (role.Role.ToLower() != name) continue;
                                     Rank(plr2, data2, role);
-
                                     plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
                                     break;
                                 }
+                            }
+
+                            //是否锁定角色
+                            var lockRole = args.Parameters.Contains("-L");
+                            if (lockRole)
+                            {
+                                data2!.Lock = !data2.Lock; // 切换锁的状态
+                                Db.RoleLock(plr2.Name, data2.Lock); // 更新数据库中的锁定状态
+                                var text = data2.Lock ? "[c/73E55C:锁定]" : "[c/F86470:解锁]";
+                                plr.SendMessage($"角色：已{text}", 240, 250, 150);
                             }
                         }
                         else
                         {
                             plr.SendMessage("使用方法: /rl s 玩家名 角色名", 240, 250, 150);
+                            plr.SendMessage("锁定/解锁角色: /rl s 玩家名 角色名 -L", 240, 250, 150);
                         }
                     }
                     break;
@@ -336,28 +352,29 @@ public class Commands
                             "/rl up <角色名/序号> ——选择角色\n" +
                             "/rl list ——列出已有角色\n" +
                             "/rl all ——列出其他玩家角色\n" +
-                            "/rl set 玩家名 角色名 ——修改玩家角色\n" +
+                            "/rl s 玩家名 角色名 ——修改指定玩家角色\n" +
+                            "/rl s 玩家名 角色名 -L ——锁定或解锁指定角色\n" +
                             "/rl add 角色名 ——以自己背包为基础添加新角色\n" +
                             "/rl del 角色名 ——移除角色\n" +
                             "/rl rm 玩家名 ——移除指定玩家数据\n" +
                             "/rl db ——开启|关闭数据存储\n" +
                             "/rl cl ——开启|关闭非法物品清理\n" +
-                            "/rl reset ——清空所有玩家数据表", 240, 250, 150);
+                            "/rl rs ——清空所有玩家数据表", 240, 250, 150);
         }
         else
         {
             plr.SendMessage("角色选择指令菜单\n" +
                             "/rl 序号 ——选择角色\n" +
                             "/rl up <角色名/序号> ——选择角色\n" +
-                            "/rl all ——列出所有玩家角色\n" +
+                            "/rl all ——列出其他玩家角色\n" +
                             "/rl list ——列出已有角色", 240, 250, 150);
         }
 
         if (data != null)
         {
-            plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
+            plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]({(data.Lock ? "已" : "未")}锁定)", 170, 170, 170);
         }
-        else if(plr != TSPlayer.Server) //帮新注册的玩家建数据 双保险
+        else if (plr != TSPlayer.Server) //帮新注册的玩家建数据 双保险
         {
             data = CreateData(plr);
             plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);

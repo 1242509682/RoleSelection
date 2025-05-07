@@ -13,7 +13,7 @@ public class RoleSelection : TerrariaPlugin
     #region 插件信息
     public override string Name => "角色选择系统";
     public override string Author => "SAP 羽学 少司命";
-    public override Version Version => new Version(1, 0, 6);
+    public override Version Version => new Version(1, 0, 7);
     public override string Description => "使用指令选择角色存档";
     #endregion
 
@@ -367,6 +367,7 @@ public class RoleSelection : TerrariaPlugin
         {
             Name = plr.Name,
             Role = "萌新",
+            Lock = false,
             Buff = new Dictionary<int, int>(),
         };
         Db.AddPlayer(data); //添加新数据
