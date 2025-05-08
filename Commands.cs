@@ -541,8 +541,8 @@ public class Commands
     }
     #endregion
 
-    #region 列出所有玩家当前角色
-    private static void ListAll(TSPlayer plr, int page2)
+    #region 列出所有玩家当前角色（每页显示多个玩家）
+    private static void ListAll(TSPlayer plr, int page)
     {
         var datas = Db.GetAllData();
         if (datas == null || !datas.Any())
@@ -551,94 +551,123 @@ public class Commands
             return;
         }
 
-        // 总项目数和总页数
+        // 每页显示的玩家数量
         var Size = Config.PageSize;
-        var MaxItems = datas.Count;
-        var MaxPages = (int)Math.Ceiling((double)MaxItems / Size); // 每页显示一个玩家
 
-        // 检查页码的有效性
-        if (page2 < 1 || page2 > MaxPages)
+        // 总项目数和总页数
+        var MaxItems = datas.Count(x => x != null);
+        var MaxPages = (int)Math.Ceiling((double)MaxItems / Size);
+
+        // 检查页码有效性
+        if (page < 1 || page > MaxPages)
         {
-            plr.SendErrorMessage("无效的页码, 总共有 {0} 个。", MaxPages);
+            plr.SendErrorMessage("无效的页码，总共有 {0} 页。", MaxPages);
             return;
         }
 
-        // 计算当前页的起始索引
-        var index = page2 - 1;
+        // 计算起始索引和结束索引
+        var start = (page - 1) * Size;
+        var end = Math.Min(start + Size, MaxItems);
 
-        // 获取当前页的玩家数据
-        var data2 = datas[index];
-
-        // 构建玩家信息
+        // 构建消息内容
         var mess = new StringBuilder();
-        mess.Append($"玩家:[c/FF9667:{data2.Name}] ");
-        mess.Append($"角色:[c/5AE0D5:{data2.Role}] ");
 
-        if (!string.IsNullOrEmpty(data2.Role))
+        for (var i = start; i < end; i++)
         {
-            var acc = TShock.UserAccounts.GetUserAccountByName(data2.Name);
-            if (acc == null)
-            {
-                plr.SendMessage($"无法找到玩家 {data2.Name} 的账号信息。", 255, 100, 100);
-                return;
-            }
-            var roles = Db.GetRole(acc.ID); // 获取该玩家的所有角色
-            var dbRole = roles.FirstOrDefault(x => x.Role == data2.Role);
-            if (dbRole != null)
-            {
-                mess.Append($"生命:[c/F7636F:{dbRole.maxHealth}] ");
-                mess.Append($"魔力:[c/5A9DE0:{dbRole.maxMana}] ");
+            var data2 = datas[i];
+            if (data2 == null)
+                continue;
 
-                string buff;
-                if (data2.Buff.Any())
+            // 玩家名称
+            mess.AppendLine($"[c/FF9667:玩家]: {data2.Name}");
+
+            // 角色名
+            if (!string.IsNullOrEmpty(data2.Role))
+            {
+                mess.Append($"[c/5AE0D5:角色]: {data2.Role} ");
+
+                var acc = TShock.UserAccounts.GetUserAccountByName(data2.Name);
+                if (acc == null)
                 {
-                    buff = string.Join(",", data2.Buff.Keys.Select(buffId => Lang.GetBuffName(buffId)));
+                    mess.AppendLine("[c/FF0000:找不到账号信息]");
                 }
                 else
                 {
-                    buff = "无";
+                    var roles = Db.GetRole(acc.ID); // 获取该玩家的所有角色
+                    var dbRole = roles.FirstOrDefault(x => x.Role == data2.Role);
+
+                    if (dbRole != null)
+                    {
+                        // 生命、魔力
+                        mess.Append($"[c/F7636F:生命]: {dbRole.maxHealth} ");
+                        mess.AppendLine($"[c/5A9DE0:魔力]: {dbRole.maxMana}");
+
+                        // Buff
+                        string buff;
+                        if (data2.Buff != null && data2.Buff.Any())
+                        {
+                            buff = string.Join(", ", data2.Buff.Keys.Select(buffId => Lang.GetBuffName(buffId)));
+                        }
+                        else
+                        {
+                            buff = "无";
+                        }
+                        mess.AppendLine($"[c/FF9567:Buff]: {buff}");
+
+                        // 装备栏位
+                        var AmoText = Utils.Format(dbRole.inventory != null
+                            ? string.Join(" ", dbRole.inventory.Skip(NetItem.ArmorIndex.Item1).Take(NetItem.ArmorSlots)
+                                .Select(item => Utils.GetItemsString(item)))
+                            : "", 20);
+                        mess.AppendLine($"[c/8DA6E4:装备]: {AmoText}");
+
+                        // 物品栏位
+                        var InvText = Utils.Format(dbRole.inventory != null
+                            ? string.Join("  ", dbRole.inventory.Take(NetItem.InventorySlots)
+                                .Select(item => Utils.GetItemsString(item)))
+                            : "", 15);
+                        mess.AppendLine($"[c/6CDB9C:物品]: {InvText}");
+
+                        // 存钱罐
+                        var PigText = Utils.Format(dbRole.inventory != null
+                            ? string.Join(" ", dbRole.inventory.Skip(NetItem.PiggyIndex.Item1).Take(NetItem.PiggySlots)
+                                .Select(item => Utils.GetItemsString(item)))
+                            : "", 10);
+                        mess.AppendLine($"[c/FDDA63:存钱罐]: {PigText}");
+                    }
+                    else
+                    {
+                        mess.AppendLine("[c/FF0000:角色不存在于数据库中]");
+                    }
                 }
-                mess.AppendLine($"\nbuff:[c/FF9567:{buff}]");
-
-                var InvText = Utils.Format(dbRole.inventory != null ?
-                    string.Join("  ", dbRole.inventory.Take(NetItem.InventorySlots)
-                    .Select(item => Utils.GetItemsString(item))) : "", 15);
-
-                var AmoText = Utils.Format(dbRole.inventory != null ?
-                    string.Join(" ", dbRole.inventory.Skip(NetItem.ArmorIndex.Item1).Take(NetItem.ArmorSlots)
-                    .Select(item => Utils.GetItemsString(item))) : "", 20);
-
-                var PigText = Utils.Format(dbRole.inventory != null ?
-                    string.Join(" ", dbRole.inventory.Skip(NetItem.PiggyIndex.Item1).Take(NetItem.PiggySlots)
-                    .Select(item => Utils.GetItemsString(item))) : "", 10);
-
-                var miscEquip = Utils.Format(dbRole.inventory != null ?
-                    string.Join(" ", dbRole.inventory.Skip(NetItem.MiscEquipIndex.Item1).Take(NetItem.MiscEquipSlots)
-                    .Select(item => Utils.GetItemsString(item))) : "", 7);
-
-                mess.AppendLine($"装备:{AmoText}");
-                mess.AppendLine($"工具:{miscEquip}");
-                mess.AppendLine($"物品:{InvText}");
-                mess.AppendLine($"存钱罐:{PigText}");
             }
+            else
+            {
+                mess.AppendLine("[c/FF0000:未设置角色]");
+            }
+
+            mess.AppendLine(); // 每个玩家之间空一行
         }
 
-        // 翻页提示信息
-        var all = mess.ToString();
-        if (page2 < MaxPages)
+        // 添加翻页提示
+        if (MaxPages > 1)
         {
-            var prompt = $"\n请输入 [c/68A7E8:/rl all {page2 + 1}] 查看下一个";
-            all += $"{prompt}";
-        }
-        else if (page2 > MaxPages)
-        {
-            var prompt = $"\n请输入 [c/68A7E8:/rl all {page2 - 1}] 查看上一个";
-            all += $"{prompt}";
+            var prompt = "";
+            if (page < MaxPages)
+            {
+                prompt += $"输入 [c/68A7E8:/rl all {page + 1}] 查看下一页 ";
+            }
+            if (page > 1)
+            {
+                prompt += $"或 输入 [c/68A7E8:/rl all {page - 1}] 查看上一页";
+            }
+            mess.AppendLine(prompt);
         }
 
         // 发送消息
-        plr.SendMessage($"\n[c/FE727D:《玩家列表》]第 [c/68A7E8:{page2}] 个，共 [c/EC6AC9:{MaxPages}] 个:\n{all}", 255, 244, 150);
+        plr.SendMessage($"\n[c/FE727D:《玩家列表》] 第 [c/68A7E8:{page}] 页，共 [c/EC6AC9:{MaxPages}] 页:\n{mess}", 255, 244, 150);
     }
+
     #endregion
 
 }
