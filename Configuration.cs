@@ -16,6 +16,8 @@ namespace RoleSelection
         public List<int> ExemptList { get; set; } = new List<int>();
         [JsonProperty("数据储存", Order = 4)]
         public bool UseDBSave { get; set; } = true;
+        [JsonProperty("每页显示数量", Order = 4)]
+        public int PageSize { get; set; } = 5;
         [JsonProperty("清理非法物品", Order = 5)]
         public bool ClearItem { get; set; } = true;
         [JsonProperty("合法物品表", Order = 6)]

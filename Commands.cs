@@ -262,6 +262,8 @@ public class Commands
                                     Db.RmPlayer(other.ID, role.Role);
                                 }
                             }
+
+                            plr.SendMessage($"已成功移除玩家数据: [c/FF9667:{other.Name}]", 240, 250, 150);
                         }
                         else
                         {
@@ -421,8 +423,8 @@ public class Commands
     {
         if (Config.MyDataList != null)
         {
-            // 分页参数
-            var Size = 1; // 每页显示的角色数量
+            // 每页显示的角色数量
+            var Size = Config.PageSize;
 
             // 总项目数和总页数
             var MaxItems = Config.MyDataList.Count(x => x != null);
@@ -550,8 +552,9 @@ public class Commands
         }
 
         // 总项目数和总页数
+        var Size = Config.PageSize;
         var MaxItems = datas.Count;
-        var MaxPages = (int)Math.Ceiling((double)MaxItems / 1); // 每页显示一个玩家
+        var MaxPages = (int)Math.Ceiling((double)MaxItems / Size); // 每页显示一个玩家
 
         // 检查页码的有效性
         if (page2 < 1 || page2 > MaxPages)

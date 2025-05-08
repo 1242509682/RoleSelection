@@ -152,8 +152,9 @@ public class Database
     public bool DelPlayer(string name)
     {
         var acc = TShock.UserAccounts.GetUserAccountByName(name);
+        if (acc == null) return false;
         var tb1 = TShock.DB.Query("DELETE FROM " + RolePlayer + " WHERE Name = @0", name);
-        var tb2 = TShock.DB.Query("DELETE FROM " + RoleData + " WHERE Account = @0", acc);
+        var tb2 = TShock.DB.Query("DELETE FROM " + RoleData + " WHERE Account = @0", acc.ID);
         return tb1 != 0 || tb2 != 0;
     }
 
@@ -374,10 +375,9 @@ public class Database
         {
             if (rolePlayers.RemoveAll(p => p.Account == userid && p.Role == role) > 0)
             {
-                TShock.DB.Query("DELETE FROM RoleCharacter WHERE Account = @0 AND Role = @1;", userid, role);
+                TShock.DB.Query("DELETE FROM " + RoleData + " WHERE Account = @0 AND Role = @1;", userid, role);
                 return true;
             }
-            return false;
         }
         catch (Exception ex)
         {

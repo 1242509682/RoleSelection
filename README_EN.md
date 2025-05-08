@@ -7,6 +7,14 @@
 ## Update Log
 
 ```
+v1.0.8
+Fixed an issue with the /rl rm command:
+Could not delete player RoleData from the database.
+No feedback message was provided upon successful execution of the command.
+Added a "PageSize" configuration option:
+Determines how many roles or players are displayed per page for the /rl list and /rl all commands.
+Note: Directly using /rl s without any parameters will display the command instructions. The same applies to other commands as well.
+
 v1.0.7
 Added role lock functionality to the `/rl s` command:
 Use **`/rl s <PlayerName> <RoleName> -L`** to lock or unlock a player’s ability to switch roles.
@@ -110,6 +118,7 @@ A small plugin improved for SAP, mainly for PVP servers.
     71
   ],
   "Data Storage": true,
+  "Page Size": 5,
   "Clear Illegal Items": true,
   "Legal Item List": [],
   "Role Table": [
