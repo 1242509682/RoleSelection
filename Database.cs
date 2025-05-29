@@ -1,10 +1,7 @@
-using Microsoft.Xna.Framework;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
-using Terraria.Net.Sockets;
 using TShockAPI;
 using TShockAPI.DB;
-using static MonoMod.InlineRT.MonoModRule;
 
 namespace RoleSelection;
 

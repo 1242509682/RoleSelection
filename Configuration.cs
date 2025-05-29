@@ -33,7 +33,7 @@ namespace RoleSelection
         #endregion
 
         #region 角色数据结构
-        public class MyData : PlayerData
+        public class MyData
         {
             [JsonProperty("角色名", Order = -33)]
             public string Role { get; set; } = "";
@@ -50,7 +50,7 @@ namespace RoleSelection
             [JsonProperty("Buff", Order = -27)]
             public Dictionary<int, int> Buff { get; set; } = new Dictionary<int, int>();
             [JsonProperty("当前盔甲饰品", Order = -26)]
-            public NetItem[] armor { get; internal set; } = Array.Empty<NetItem>();
+            public new NetItem[] armor { get; internal set; } = Array.Empty<NetItem>();
             [JsonProperty("第2套盔甲饰品", Order = -25)]
             public NetItem[] loadout2Armor { get; internal set; } = Array.Empty<NetItem>();
             [JsonProperty("第3套盔甲饰品", Order = -24)]
@@ -61,8 +61,6 @@ namespace RoleSelection
             public NetItem[] piggy { get; internal set; } = Array.Empty<NetItem>();
             [JsonProperty("装备工具栏", Order = -21)]
             public NetItem[] miscEquip { get; internal set; } = Array.Empty<NetItem>();
-
-            public MyData() : base(new TSPlayer(-1)) { }
         }
         #endregion
 

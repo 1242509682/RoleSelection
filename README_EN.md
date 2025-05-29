@@ -12,6 +12,9 @@ Added chat prefix display for roles and its corresponding configuration option: 
 Added support for setting buff-based punishment for illegal items.
 Modified the usage of the /rl cl subcommand:
 /rl cl 0 – Disable punishment for illegal items (1 = clear items, 2 = apply buff)
+Removed redundant configuration items from the configuration file:
+/Rl add no longer saves players':
+Items such as safes, void bags, and protective furnaces, as well as armor and accessories on pages two and three
 
 v1.0.8
 Fixed an issue with the /rl rm command:
