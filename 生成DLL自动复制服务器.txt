@@ -1,5 +1,5 @@
-copy bin\Release\net6.0\RoleSelection.dll C:\Users\羽学\Desktop\Beta\ServerPlugins
-del C:\Users\羽学\Desktop\Beta\tshock\角色选择系统.json
+copy bin\Release\net6.0\RoleSelection.dll C:\Users\羽学\Desktop\TShock\ServerPlugins
+del C:\Users\羽学\Desktop\TShock\tshock\角色选择系统.json
 taskkill /F /IM TShock.Server.exe
 
 

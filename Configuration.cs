@@ -8,21 +8,27 @@ namespace RoleSelection
         #region 实例变量
         [JsonProperty("插件开关", Order = 0)]
         public bool Enabled { get; set; } = true;
-        [JsonProperty("清理钱币", Order = 1)]
+        [JsonProperty("使用聊天前缀", Order = 1)]
+        public bool UsePrefix { get; set; } = true;
+        [JsonProperty("聊天前缀格式", Order = 2)]
+        public string ChatFormat { get; set; } = "[c/70A9CC:<{1}>] {2}:{3} {4}";
+        [JsonProperty("清理钱币", Order = 3)]
         public bool IsACoin { get; set; } = false;
-        [JsonProperty("进服清背包", Order = 2)]
+        [JsonProperty("进服清背包", Order = 4)]
         public bool JoinClearItem { get; set; } = false;
-        [JsonProperty("免清物品表", Order = 3)]
+        [JsonProperty("免清物品表", Order = 5)]
         public List<int> ExemptList { get; set; } = new List<int>();
-        [JsonProperty("数据储存", Order = 4)]
+        [JsonProperty("数据储存", Order = 6)]
         public bool UseDBSave { get; set; } = true;
-        [JsonProperty("每页显示数量", Order = 4)]
+        [JsonProperty("每页显示数量", Order = 7)]
         public int PageSize { get; set; } = 5;
-        [JsonProperty("清理非法物品", Order = 5)]
-        public bool ClearItem { get; set; } = true;
-        [JsonProperty("合法物品表", Order = 6)]
+        [JsonProperty("惩罚非法物品方式(1清物品/2加buff)", Order = 8)]
+        public int ClearItem { get; set; } = 0;
+        [JsonProperty("非法物品Buff表", Order = 9)]
+        public Dictionary<int, int> BuffList = new Dictionary<int, int>();
+        [JsonProperty("合法物品表", Order = 10)]
         public HashSet<int> SecureItem { get; set; } = new HashSet<int>();
-        [JsonProperty("角色表", Order = 7)]
+        [JsonProperty("角色表", Order = 11)]
         public List<MyData> MyDataList { get; set; } = new List<MyData>();
         #endregion
 
@@ -64,6 +70,8 @@ namespace RoleSelection
         public void SetDefault()
         {
             ExemptList = new List<int>() { 71 };
+
+            BuffList = new Dictionary<int, int>() { { 149,5 } };
             MyDataList = new List<MyData>()
             {
                 new MyData() 

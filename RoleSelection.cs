@@ -3,6 +3,7 @@ using Terraria.ID;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
+using Microsoft.Xna.Framework;
 using static RoleSelection.Configuration;
 
 namespace RoleSelection;
@@ -13,7 +14,7 @@ public class RoleSelection : TerrariaPlugin
     #region 插件信息
     public override string Name => "角色选择系统";
     public override string Author => "SAP 羽学 少司命";
-    public override Version Version => new Version(1, 0, 8);
+    public override Version Version => new Version(1, 0, 9);
     public override string Description => "使用指令选择角色存档";
     #endregion
 
@@ -24,11 +25,11 @@ public class RoleSelection : TerrariaPlugin
 
     #region 注册与释放
     public RoleSelection(Main game) : base(game) { }
-
     public override void Initialize()
     {
         LoadConfig();
         GeneralHooks.ReloadEvent += ReloadConfig;
+        ServerApi.Hooks.ServerChat.Register(this, this.OnChat);
         GetDataHandlers.PlayerUpdate.Register(this.OnPlayerUpdate);
         GetDataHandlers.PlayerSpawn.Register(this.OnPlayerSpawn);
         ServerApi.Hooks.NetGreetPlayer.Register(this, this.OnGreetPlayer);
@@ -40,6 +41,7 @@ public class RoleSelection : TerrariaPlugin
         if (disposing)
         {
             GeneralHooks.ReloadEvent -= ReloadConfig;
+            ServerApi.Hooks.ServerChat.Deregister(this, this.OnChat);
             GetDataHandlers.PlayerUpdate.UnRegister(this.OnPlayerUpdate);
             GetDataHandlers.PlayerSpawn.UnRegister(this.OnPlayerSpawn);
             ServerApi.Hooks.NetGreetPlayer.Deregister(this, this.OnGreetPlayer);
@@ -80,7 +82,7 @@ public class RoleSelection : TerrariaPlugin
         var data = Db.GetData(plr.Name); //获取玩家数据方法
         if (plr == null || !plr.Active || !plr.IsLoggedIn || !plr.HasPermission("role.use") || !Config.Enabled) return;
 
-        if(data != null)
+        if (data != null)
         {
             SetBuff(plr);
         }
@@ -303,15 +305,13 @@ public class RoleSelection : TerrariaPlugin
             Config.SecureItem.Contains(Sel.type) ||
             Config.ExemptList.Contains(Sel.type)) return;
 
-        var Data = Db.GetData(plr.Name);
-
         // 角色表不为空 清理非法物品开启 且该玩家数据不为空则进行检查
-        if (Config.MyDataList != null && Config.ClearItem && Data != null)
+        if (Config.MyDataList != null && data != null)
         {
             foreach (var role in Config.MyDataList)
             {
                 //如果是当前角色允许使用的物品、或者是当前角色的武器类型小于等于0、与数据库记录的角色名不相同则跳过
-                if (role.AllowItem.Contains(Sel.type) || role.WeaponType <= 0 || Data.Role != role.Role) continue;
+                if (role.AllowItem.Contains(Sel.type) || role.WeaponType <= 0 || data.Role != role.Role) continue;
 
                 //如果是预设的物品ID则跳过
                 foreach (var item in role.inventory)
@@ -326,9 +326,19 @@ public class RoleSelection : TerrariaPlugin
                 if ((role.WeaponType != Weapon || role.DisableItem.Contains(Sel.type)) && plr.TPlayer.controlUseItem &&
                     plr.TPlayer.selectedItem >= 0 && plr.TPlayer.selectedItem < plr.TPlayer.inventory.Length)
                 {
-                    plr.SendInfoMessage($"【角色选择系统】当前角色禁止使用这个物品:{Lang.GetItemName(Sel.type)}");
-                    plr.TPlayer.inventory[plr.TPlayer.selectedItem].SetDefaults(0);
-                    NetMessage.SendData(5, -1, -1, null, plr.Index, plr.TPlayer.selectedItem);
+                    if (Config.ClearItem == 1)
+                    {
+                        plr.SendInfoMessage($"【角色选择系统】当前角色禁止使用这个物品:{Lang.GetItemName(Sel.type)}");
+                        plr.TPlayer.inventory[plr.TPlayer.selectedItem].TurnToAir();
+                        NetMessage.SendData(5, -1, -1, null, plr.Index, plr.TPlayer.selectedItem);
+                    }
+                    else if (Config.ClearItem == 2)
+                    {
+                        foreach (var buff in Config.BuffList)
+                        {
+                            plr.SetBuff(buff.Key,buff.Value * 60);
+                        }
+                    }
                 }
             }
         }
@@ -382,6 +392,48 @@ public class RoleSelection : TerrariaPlugin
         }
 
         return data;
-    } 
+    }
+    #endregion
+
+    #region 玩家聊天前缀方法
+    private void OnChat(ServerChatEventArgs args)
+    {
+        var plr = TShock.Players[args.Who];
+        if (plr == null || !plr.IsLoggedIn || !plr.HasPermission(Permissions.canchat) ||
+           !Config.Enabled || !Config.UsePrefix || plr.mute || !plr.HasPermission("role.use"))
+        {
+            return;
+        }
+
+        var data = Db.GetData(plr.Name); //帮玩家建数据方法
+        if (data == null)
+        {
+            data = CreateData(plr);
+        }
+
+        //检查命令用的标识
+        var flag = false;
+
+        // 检查是否为命令
+        if (args.Text.StartsWith(TShock.Config.Settings.CommandSpecifier) || args.Text.StartsWith(TShock.Config.Settings.CommandSilentSpecifier))
+        {
+            flag = true;
+        }
+
+        //检查是否使用其他语言包导致指令为空
+        if (string.IsNullOrWhiteSpace(args.Text))
+        {
+            flag = true;
+        }
+
+        //不是命令 则继续
+        if (!flag)
+        {
+            string ChatFormat = Config.ChatFormat;
+            TShock.Utils.Broadcast(string.Format(ChatFormat, plr.Group.Name, data.Role, plr.Name, plr.Group.Suffix, args.Text), plr.Group.R, plr.Group.G, plr.Group.B);
+        }
+
+        args.Handled = !flag;
+    }
     #endregion
 }

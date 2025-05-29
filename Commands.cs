@@ -300,13 +300,53 @@ public class Commands
 
                 case "cl":
                 case "clear":
-                    if (plr.HasPermission("role.admin"))
                     {
-                        var enabled = Config.ClearItem;
-                        Config.ClearItem = !enabled;
-                        var text = enabled ? "[c/F86470:禁用]" : "[c/73E55C:启用]";
+                        if (!plr.HasPermission("role.admin"))
+                        {
+                            plr.SendMessage("权限不足。", 255, 0, 0);
+                            break;
+                        }
+
+                        if (!int.TryParse(args.Parameters[1], out var num))
+                        {
+                            plr.SendMessage("参数无效，请输入 0（不清理）、1（清理物品） 或 2（设置BUFF）", 255, 255, 0);
+                            break;
+                        }
+
+                        switch (num)
+                        {
+                            case 0:
+                                // 不清理
+                                if (Config.ClearItem != 0)
+                                    Config.ClearItem = 0;
+                                break;
+
+                            case 1:
+                                // 清理物品
+                                if (Config.ClearItem != 1)
+                                    Config.ClearItem = 1;
+                                break;
+
+                            case 2:
+                                // 设置BUFF
+                                if (Config.ClearItem != 2)
+                                    Config.ClearItem = 2;
+                                break;
+                            default:
+                                plr.SendMessage("参数超出范围，请输入 0（不清理）、1（清理物品） 或 2（设置BUFF）", 255, 255, 0);
+                                break;
+                        }
+
+                        string statusText = Config.ClearItem switch
+                        {
+                            0 => "[c/F86470:已关闭]",
+                            1 => "[c/73E55C:清理物品]",
+                            2 => "[c/73E55C:设置BUFF]",
+                            _ => "[c/F86470:未知]"
+                        };
+
                         Config.Write();
-                        plr.SendMessage($"已{text}非法物品清理功能。", 170, 170, 170);
+                        plr.SendMessage($"非法物品惩罚功能:{statusText}", 170, 170, 170);
                     }
                     break;
 
@@ -360,7 +400,7 @@ public class Commands
                             "/rl del 角色名 ——移除角色\n" +
                             "/rl rm 玩家名 ——移除指定玩家数据\n" +
                             "/rl db ——开启|关闭数据存储\n" +
-                            "/rl cl ——开启|关闭非法物品清理\n" +
+                            "/rl cl 数字 ——非法物品惩罚(0关闭/1清物品/2设buff)\n" +
                             "/rl rs ——清空所有玩家数据表", 240, 250, 150);
         }
         else

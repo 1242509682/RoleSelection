@@ -7,6 +7,12 @@
 ## Update Log
 
 ```
+v1.0.9
+Added chat prefix display for roles and its corresponding configuration option: "Use Chat Prefix"
+Added support for setting buff-based punishment for illegal items.
+Modified the usage of the /rl cl subcommand:
+/rl cl 0 – Disable punishment for illegal items (1 = clear items, 2 = apply buff)
+
 v1.0.8
 Fixed an issue with the /rl rm command:
 Could not delete player RoleData from the database.
@@ -104,6 +110,7 @@ A small plugin improved for SAP, mainly for PVP servers.
 | /rl del <role> | /rl d |   role.admin    |    Remove character    |
 | /rl rm <player name> | /rl r |   role.admin    |    Remove specified player's data    |
 | /rl db | None |   role.admin    |    Enable or disable Database storage    |
+| /rl clear <number> | /rl cl | role.admin | Illegal item punishment (0=off, 1=clear items, 2=set buff) |
 | /rl reset | /rl rs |   role.admin    |    Clear all player data    |
 | /reload  | None |   tshock.cfg.reload    |    Reload configuration file    |
 
@@ -112,6 +119,8 @@ A small plugin improved for SAP, mainly for PVP servers.
 ```json
 {
   "Plugin Enabled": true,
+  "UseChatPrefix": true,
+  "ChatPrefixFormat": "[c/70A9CC:<{1}>] {2}:{3} {4}",
   "Clear Coins": false,
   "Clear Backpack on Join": false,
   "Exempt Clear List": [
@@ -119,7 +128,10 @@ A small plugin improved for SAP, mainly for PVP servers.
   ],
   "Data Storage": true,
   "Page Size": 5,
-  "Clear Illegal Items": true,
+  "PunishmentForIllegalItems (1=clear, 2=add buff)": 0,
+  "PunishmentBuffTable/seconds": {
+    "149": 5
+  },
   "Legal Item List": [],
   "Role Table": [
     {
