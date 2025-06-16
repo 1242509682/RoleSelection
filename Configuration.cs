@@ -20,15 +20,18 @@ namespace RoleSelection
         public List<int> ExemptList { get; set; } = new List<int>();
         [JsonProperty("数据储存", Order = 6)]
         public bool UseDBSave { get; set; } = true;
-        [JsonProperty("每页显示数量", Order = 7)]
+        [JsonProperty("每页显示角色", Order = 7)]
         public int PageSize { get; set; } = 5;
-        [JsonProperty("惩罚非法物品方式(1清物品/2加buff)", Order = 8)]
+        [JsonProperty("每行显示物品", Order = 8)]
+        public int PageLine { get; set; } = 7;
+
+        [JsonProperty("惩罚非法物品方式(1清物品/2加buff)", Order = 9)]
         public int ClearItem { get; set; } = 0;
-        [JsonProperty("非法物品Buff表", Order = 9)]
+        [JsonProperty("非法物品Buff表", Order = 10)]
         public Dictionary<int, int> BuffList = new Dictionary<int, int>();
-        [JsonProperty("合法物品表", Order = 10)]
+        [JsonProperty("合法物品表", Order = 11)]
         public HashSet<int> SecureItem { get; set; } = new HashSet<int>();
-        [JsonProperty("角色表", Order = 11)]
+        [JsonProperty("角色表", Order = 12)]
         public List<MyData> MyDataList { get; set; } = new List<MyData>();
         #endregion
 

@@ -113,10 +113,10 @@ public class Commands
                                     maxHealth = plr.TPlayer.statLifeMax,
                                     maxMana = plr.TPlayer.statManaMax,
                                     Buff = new Dictionary<int, int>(),
-                                    inventory = NewData.inventory,
-                                    armor = plr.TPlayer.armor.Length > 0 ? plr.TPlayer.armor.Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
-                                    miscEquip = plr.TPlayer.miscEquips.Length > 0 ? plr.TPlayer.miscEquips.Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
-                                    piggy = plr.TPlayer.bank.item.Length > 0 ? plr.TPlayer.bank.item.Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+                                    inventory = NewData.inventory.Where(item => item.NetId != 0).Select(item => new NetItem(item.NetId, item.Stack, item.PrefixId)).ToArray(),
+                                    armor = plr.TPlayer.armor.Length > 0 ? plr.TPlayer.armor.Where(item => item.netID != 0).Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+                                    miscEquip = plr.TPlayer.miscEquips.Length > 0 ? plr.TPlayer.miscEquips.Where(item => item.netID != 0).Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+                                    piggy = plr.TPlayer.bank.item.Length > 0 ? plr.TPlayer.bank.item.Where(item => item.netID != 0).Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
                                     WeaponType = GetPlayerWeapon(plr.TPlayer)
                                 };
 
@@ -469,6 +469,8 @@ public class Commands
         {
             // 每页显示的角色数量
             var Size = Config.PageSize;
+            // 每行显示物品数量
+            var Line = Config.PageLine;
 
             // 总项目数和总页数
             var MaxItems = Config.MyDataList.Count(x => x != null);
@@ -522,19 +524,19 @@ public class Commands
                         maxMana = db.maxMana;
                         InvText = Utils.Format(db.inventory != null ?
                             string.Join("  ", db.inventory.Take(NetItem.InventorySlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", 15);
+                            .Select(item => Utils.GetItemsString(item))) : "", Line);
 
                         AmoText = Utils.Format(db.inventory != null ?
                             string.Join(" ", db.inventory.Skip(NetItem.ArmorIndex.Item1).Take(NetItem.ArmorSlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", 20);
+                            .Select(item => Utils.GetItemsString(item))) : "", Line);
 
                         miscEquip = Utils.Format(db.inventory != null ?
                             string.Join(" ", db.inventory.Skip(NetItem.MiscEquipIndex.Item1).Take(NetItem.MiscEquipSlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", 7);
+                            .Select(item => Utils.GetItemsString(item))) : "", Line);
 
                         pigText = Utils.Format(db.inventory != null ?
                             string.Join(" ", db.inventory.Skip(NetItem.PiggyIndex.Item1).Take(NetItem.PiggySlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", 10);
+                            .Select(item => Utils.GetItemsString(item))) : "", Line);
                     }
                     else
                     {
@@ -542,16 +544,16 @@ public class Commands
                         maxHealth = my.maxHealth;
                         maxMana = my.maxMana;
                         InvText = Utils.Format(my.inventory != null ?
-                            string.Join("  ", my.inventory.Select(item => Utils.GetItemsString(item))) : "", 15);
+                            string.Join("  ", my.inventory.Select(item => Utils.GetItemsString(item))) : "", Line);
 
                         AmoText = Utils.Format(my.armor != null ?
-                        string.Join(" ", my.armor.Select(item => Utils.GetItemsString(item))) : "", 20);
+                        string.Join(" ", my.armor.Select(item => Utils.GetItemsString(item))) : "", Line);
 
                         miscEquip = Utils.Format(my.miscEquip != null ?
-                        string.Join(" ", my.miscEquip.Select(item => Utils.GetItemsString(item))) : "", 7);
+                        string.Join(" ", my.miscEquip.Select(item => Utils.GetItemsString(item))) : "", Line);
 
                         pigText = Utils.Format(my.piggy != null ?
-                        string.Join(" ", my.piggy.Select(item => Utils.GetItemsString(item))) : "", 10);
+                        string.Join(" ", my.piggy.Select(item => Utils.GetItemsString(item))) : "", Line);
                     }
 
                     // 发送带有索引的消息
@@ -595,8 +597,10 @@ public class Commands
             return;
         }
 
-        // 每页显示的玩家数量
+        // 每页显示的角色数量
         var Size = Config.PageSize;
+        // 每行显示物品数量
+        var Line = Config.PageLine;
 
         // 总项目数和总页数
         var MaxItems = datas.Count(x => x != null);
@@ -661,19 +665,19 @@ public class Commands
                         // 装备栏位
                         var AmoText = Utils.Format(dbRole.inventory != null
                             ? string.Join(" ", dbRole.inventory.Skip(NetItem.ArmorIndex.Item1).Take(NetItem.ArmorSlots)
-                                .Select(item => Utils.GetItemsString(item))): "", 20);
+                                .Select(item => Utils.GetItemsString(item))): "", Line);
                         mess.AppendLine($"[c/8DA6E4:装备]: {AmoText}");
 
                         // 物品栏位
                         var InvText = Utils.Format(dbRole.inventory != null
                             ? string.Join("  ", dbRole.inventory.Take(NetItem.InventorySlots)
-                                .Select(item => Utils.GetItemsString(item))): "", 15);
+                                .Select(item => Utils.GetItemsString(item))): "", Line);
                         mess.AppendLine($"[c/6CDB9C:物品]: {InvText}");
 
                         // 存钱罐
                         var PigText = Utils.Format(dbRole.inventory != null
                             ? string.Join(" ", dbRole.inventory.Skip(NetItem.PiggyIndex.Item1).Take(NetItem.PiggySlots)
-                                .Select(item => Utils.GetItemsString(item))): "", 10);
+                                .Select(item => Utils.GetItemsString(item))): "", Line);
                         mess.AppendLine($"[c/FDDA63:存钱罐]: {PigText}");
                     }
                     else

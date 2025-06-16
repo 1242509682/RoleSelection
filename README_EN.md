@@ -7,6 +7,11 @@
 ## Update Log
 
 ```
+v1.1.0
+Use the/rl add command to no longer save empty slots to the configuration file
+Added the configuration item 'Display items per line'
+Attempt to repair the skin color of the character
+
 v1.0.9
 Added chat prefix display for roles and its corresponding configuration option: "Use Chat Prefix"
 Added support for setting buff-based punishment for illegal items.
@@ -131,6 +136,7 @@ A small plugin improved for SAP, mainly for PVP servers.
   ],
   "Data Storage": true,
   "Page Size": 5,
+  "Page Line": 7,
   "PunishmentForIllegalItems (1=clear, 2=add buff)": 0,
   "PunishmentBuffTable/seconds": {
     "149": 5
