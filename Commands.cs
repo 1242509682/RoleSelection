@@ -36,8 +36,14 @@ public class Commands
                 case "up":
                 case "rank":
                 case "升级":
-                    if (Config.MyDataList != null && data != null)
+                    if (Config.MyDataList != null)
                     {
+                        if (data == null || plr == TSPlayer.Server)
+                        {
+                            plr.SendInfoMessage("请重进游戏后再使用/rl up ——选择角色指令");
+                            return;
+                        }
+
                         if (args.Parameters.Count >= 2)
                         {
                             //如果玩家被锁定角色则不执行任何操作
@@ -96,6 +102,12 @@ public class Commands
                 case "添加":
                     if (plr.HasPermission("role.admin"))
                     {
+                        if (plr == TSPlayer.Server)
+                        {
+                            plr.SendInfoMessage("请进入游戏后再使用/rl add ——添加角色指令");
+                            return;
+                        }
+
                         if (args.Parameters.Count >= 2)
                         {
                             var role = args.Parameters[1];
@@ -106,17 +118,29 @@ public class Commands
                             }
                             else
                             {
-                                var NewData = TShock.CharacterDB.GetPlayerData(plr, plr.Account.ID);
                                 var NewRole = new MyData()
                                 {
                                     Role = role,
                                     maxHealth = plr.TPlayer.statLifeMax,
                                     maxMana = plr.TPlayer.statManaMax,
                                     Buff = new Dictionary<int, int>(),
-                                    inventory = NewData.inventory.Where(item => item.NetId != 0).Select(item => new NetItem(item.NetId, item.Stack, item.PrefixId)).ToArray(),
-                                    armor = plr.TPlayer.armor.Length > 0 ? plr.TPlayer.armor.Where(item => item.netID != 0).Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
-                                    miscEquip = plr.TPlayer.miscEquips.Length > 0 ? plr.TPlayer.miscEquips.Where(item => item.netID != 0).Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
-                                    piggy = plr.TPlayer.bank.item.Length > 0 ? plr.TPlayer.bank.item.Where(item => item.netID != 0).Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+
+                                    inventory = plr.TPlayer.inventory.Length > 0 ? plr.TPlayer.inventory
+                                    .Where(item => item.netID != 0 && !Config.ExemptList.Contains(item.netID))
+                                    .Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+
+                                    armor = plr.TPlayer.armor.Length > 0 ? plr.TPlayer.armor
+                                    .Where(item => item.netID != 0)
+                                    .Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+
+                                    miscEquip = plr.TPlayer.miscEquips.Length > 0 ? plr.TPlayer.miscEquips
+                                    .Where(item => item.netID != 0)
+                                    .Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+
+                                    piggy = plr.TPlayer.bank.item.Length > 0 ? plr.TPlayer.bank.item
+                                    .Where(item => item.netID != 0)
+                                    .Select(item => new NetItem(item.netID, item.stack, item.prefix)).ToArray() : null!,
+
                                     WeaponType = GetPlayerWeapon(plr.TPlayer)
                                 };
 
@@ -125,7 +149,6 @@ public class Commands
                                     if (plr.TPlayer.buffTime[i] > 0 && plr.TPlayer.buffType[i] > 0)
                                         NewRole.Buff.Add(plr.TPlayer.buffType[i], plr.TPlayer.buffTime[i]);
 
-                                NewData.CopyCharacter(plr);
                                 Config.MyDataList.Add(NewRole);
                                 Config.Write();
                                 TShock.Utils.Broadcast($"管理员 [c/4792DD:{plr.Name}] 已添加新角色:[c/47DDD0:{role}]", 240, 250, 150);
@@ -307,8 +330,14 @@ public class Commands
                     {
                         if (!plr.HasPermission("role.admin"))
                         {
-                            plr.SendMessage("权限不足。", 255, 0, 0);
+                            plr.SendMessage("你没有【role.admin】权限", 255, 0, 0);
                             break;
+                        }
+
+                        if (args.Parameters.Count < 2)
+                        {
+                            plr.SendMessage("正确格式: /rl cl 类型 (0不清理/1清理物品/2设置BUFF)", 255, 0, 0);
+                            return;
                         }
 
                         if (!int.TryParse(args.Parameters[1], out var num))
@@ -337,7 +366,7 @@ public class Commands
                                     Config.ClearItem = 2;
                                 break;
                             default:
-                                plr.SendMessage("参数超出范围，请输入 0（不清理）、1（清理物品） 或 2（设置BUFF）", 255, 255, 0);
+                                plr.SendMessage("正确格式: /rl cl 类型 (0不清理/1清理物品/2设置BUFF)", 255, 0, 0);
                                 break;
                         }
 
