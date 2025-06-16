@@ -114,7 +114,7 @@ public class Commands
 
                             if (Config.MyDataList.Any(data => data.Role.Equals(role, StringComparison.OrdinalIgnoreCase)))
                             {
-                                plr.SendMessage($"角色名 [c/FF9667:{role}] 已存在，请选择其他名称。", 240, 250, 150);
+                                plr.SendMessage($"角色名 {role} 已存在，请选择其他名称。", 240, 250, 150);
                             }
                             else
                             {
@@ -151,7 +151,7 @@ public class Commands
 
                                 Config.MyDataList.Add(NewRole);
                                 Config.Write();
-                                TShock.Utils.Broadcast($"管理员 [c/4792DD:{plr.Name}] 已添加新角色:[c/47DDD0:{role}]", 240, 250, 150);
+                                TShock.Utils.Broadcast($"管理员 [c/4792DD:{plr.Name}] 已添加新角色: {role}", 240, 250, 150);
                             }
                         }
                         else
@@ -181,7 +181,7 @@ public class Commands
                                 {
                                     var role = Config.MyDataList[index - 1];
                                     Rank(plr2, data2, role);
-                                    plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
+                                    plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 {role.Role}", 240, 250, 150);
                                 }
                             }
                             else // 如果参数是职业名称
@@ -191,7 +191,7 @@ public class Commands
                                 {
                                     if (role.Role.ToLower() != name) continue;
                                     Rank(plr2, data2, role);
-                                    plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 [c/FF9667:{role.Role}]", 240, 250, 150);
+                                    plr.SendMessage($"玩家 [c/5B9DE1:{plr2.Name}] 角色设为 {role.Role}", 240, 250, 150);
                                     break;
                                 }
                             }
@@ -233,7 +233,7 @@ public class Commands
                                 Config.MyDataList.RemoveAt(index - 1);
                                 Config.Write();
                                 Db.DelRole(role.Role);
-                                plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
+                                plr.SendMessage($"已成功移除角色: {role.Role}", 240, 250, 150);
                                 break;
                             }
                             else // 如果参数是职业名称
@@ -247,7 +247,7 @@ public class Commands
                                     Config.MyDataList.RemoveAt(i);
                                     Config.Write();
                                     Db.DelRole(role.Role);
-                                    plr.SendMessage($"已成功移除角色: [c/FF9667:{role.Role}]", 240, 250, 150);
+                                    plr.SendMessage($"已成功移除角色: {role.Role}", 240, 250, 150);
 
                                     break;
                                 }
@@ -445,14 +445,16 @@ public class Commands
                             "/rl list ——列出已有角色", 240, 250, 150);
         }
 
+        var text = "[c/FC9C70:您的角色为:]";
+
         if (data != null)
         {
-            plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]({(data.Lock ? "已" : "未")}锁定)", 170, 170, 170);
+            plr.SendMessage($"{text.ToString()} {data.Role} ({(data.Lock ? "已" : "未")}锁定)", 100, 160, 220);
         }
         else if (plr != TSPlayer.Server) //帮新注册的玩家建数据 双保险
         {
             data = CreateData(plr);
-            plr.SendMessage($"您的角色为:[c/FEF766:{data.Role}]", 170, 170, 170);
+            plr.SendMessage($"{text.ToString()} {data.Role} ", 100, 160, 220);
         }
 
     }
@@ -500,7 +502,6 @@ public class Commands
             var Size = Config.PageSize;
             // 每行显示物品数量
             var Line = Config.PageLine;
-
             // 总项目数和总页数
             var MaxItems = Config.MyDataList.Count(x => x != null);
             var MaxPages = (int)Math.Ceiling((double)MaxItems / Size);
@@ -553,19 +554,19 @@ public class Commands
                         maxMana = db.maxMana;
                         InvText = Utils.Format(db.inventory != null ?
                             string.Join("  ", db.inventory.Take(NetItem.InventorySlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", Line);
+                            .Select(Utils.GetItemsString)) : "", Line);
 
                         AmoText = Utils.Format(db.inventory != null ?
                             string.Join(" ", db.inventory.Skip(NetItem.ArmorIndex.Item1).Take(NetItem.ArmorSlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", Line);
+                            .Select(Utils.GetItemsString)) : "", Line);
 
                         miscEquip = Utils.Format(db.inventory != null ?
                             string.Join(" ", db.inventory.Skip(NetItem.MiscEquipIndex.Item1).Take(NetItem.MiscEquipSlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", Line);
+                            .Select(Utils.GetItemsString)) : "", Line);
 
                         pigText = Utils.Format(db.inventory != null ?
                             string.Join(" ", db.inventory.Skip(NetItem.PiggyIndex.Item1).Take(NetItem.PiggySlots)
-                            .Select(item => Utils.GetItemsString(item))) : "", Line);
+                            .Select(Utils.GetItemsString)) : "", Line);
                     }
                     else
                     {
@@ -573,20 +574,20 @@ public class Commands
                         maxHealth = my.maxHealth;
                         maxMana = my.maxMana;
                         InvText = Utils.Format(my.inventory != null ?
-                            string.Join("  ", my.inventory.Select(item => Utils.GetItemsString(item))) : "", Line);
+                            string.Join("  ", my.inventory.Select(Utils.GetItemsString)) : "", Line);
 
                         AmoText = Utils.Format(my.armor != null ?
-                        string.Join(" ", my.armor.Select(item => Utils.GetItemsString(item))) : "", Line);
+                        string.Join(" ", my.armor.Select(Utils.GetItemsString)) : "", Line);
 
                         miscEquip = Utils.Format(my.miscEquip != null ?
-                        string.Join(" ", my.miscEquip.Select(item => Utils.GetItemsString(item))) : "", Line);
+                        string.Join(" ", my.miscEquip.Select(Utils.GetItemsString)) : "", Line);
 
                         pigText = Utils.Format(my.piggy != null ?
-                        string.Join(" ", my.piggy.Select(item => Utils.GetItemsString(item))) : "", Line);
+                        string.Join(" ", my.piggy.Select(Utils.GetItemsString)) : "", Line);
                     }
 
                     // 发送带有索引的消息
-                    mess.AppendLine($"[c/73E45C:{i + 1}].角色:[c/5AE0D5:{role}] " +
+                    mess.AppendLine($"[c/73E45C:{i + 1}].角色:{role} " +
                                               $"生命:[c/F7636F:{maxHealth}] " +
                                               $"魔力:[c/5A9DE0:{maxMana}]\n" +
                                               $"buff:[c/FF9567:{buff}]\n" +
@@ -619,6 +620,7 @@ public class Commands
     #region 列出所有玩家当前角色（每页显示多个玩家）
     private static void ListAll(TSPlayer plr, int page)
     {
+
         var datas = Db.GetAllData();
         if (datas == null || !datas.Any())
         {
@@ -626,7 +628,7 @@ public class Commands
             return;
         }
 
-        // 每页显示的角色数量
+        // 每页显示玩家数量
         var Size = Config.PageSize;
         // 每行显示物品数量
         var Line = Config.PageLine;
@@ -693,20 +695,23 @@ public class Commands
 
                         // 装备栏位
                         var AmoText = Utils.Format(dbRole.inventory != null
-                            ? string.Join(" ", dbRole.inventory.Skip(NetItem.ArmorIndex.Item1).Take(NetItem.ArmorSlots)
-                                .Select(item => Utils.GetItemsString(item))): "", Line);
+                            ? string.Join(" ", dbRole.inventory.Skip(NetItem.ArmorIndex.Item1)
+                            .Take(NetItem.ArmorSlots)
+                            .Select(Utils.GetItemsString)) : "", Line);
                         mess.AppendLine($"[c/8DA6E4:装备]: {AmoText}");
 
                         // 物品栏位
                         var InvText = Utils.Format(dbRole.inventory != null
-                            ? string.Join("  ", dbRole.inventory.Take(NetItem.InventorySlots)
-                                .Select(item => Utils.GetItemsString(item))): "", Line);
+                            ? string.Join("  ", dbRole.inventory
+                            .Take(NetItem.InventorySlots)
+                            .Select(Utils.GetItemsString)) : "", Line);
                         mess.AppendLine($"[c/6CDB9C:物品]: {InvText}");
 
                         // 存钱罐
                         var PigText = Utils.Format(dbRole.inventory != null
-                            ? string.Join(" ", dbRole.inventory.Skip(NetItem.PiggyIndex.Item1).Take(NetItem.PiggySlots)
-                                .Select(item => Utils.GetItemsString(item))): "", Line);
+                            ? string.Join(" ", dbRole.inventory.Skip(NetItem.PiggyIndex.Item1)
+                            .Take(NetItem.PiggySlots)
+                            .Select(Utils.GetItemsString)) : "", Line);
                         mess.AppendLine($"[c/FDDA63:存钱罐]: {PigText}");
                     }
                     else

@@ -3,7 +3,6 @@ using Terraria.ID;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Hooks;
-using Microsoft.Xna.Framework;
 using static RoleSelection.Configuration;
 
 namespace RoleSelection;
@@ -14,8 +13,8 @@ public class RoleSelection : TerrariaPlugin
     #region 插件信息
     public override string Name => "角色选择系统";
     public override string Author => "SAP 羽学 少司命";
-    public override Version Version => new Version(1, 1, 0);
-    public override string Description => "使用指令选择角色存档";
+    public override Version Version => new Version(1, 1, 1);
+    public override string Description => "使用指令选择角色存档,TShock 5版";
     #endregion
 
     #region 全局变量
@@ -33,6 +32,7 @@ public class RoleSelection : TerrariaPlugin
         GetDataHandlers.PlayerUpdate.Register(this.OnPlayerUpdate);
         GetDataHandlers.PlayerSpawn.Register(this.OnPlayerSpawn);
         ServerApi.Hooks.NetGreetPlayer.Register(this, this.OnGreetPlayer);
+        ServerApi.Hooks.ServerLeave.Register(this, this.OnServerLeave);
         TShockAPI.Commands.ChatCommands.Add(new Command("role.use", Commands.RoleCMD, "role", "class", "rl"));
     }
 
@@ -45,6 +45,7 @@ public class RoleSelection : TerrariaPlugin
             GetDataHandlers.PlayerUpdate.UnRegister(this.OnPlayerUpdate);
             GetDataHandlers.PlayerSpawn.UnRegister(this.OnPlayerSpawn);
             ServerApi.Hooks.NetGreetPlayer.Deregister(this, this.OnGreetPlayer);
+            ServerApi.Hooks.ServerLeave.Deregister(this, this.OnServerLeave);
             TShockAPI.Commands.ChatCommands.RemoveAll(x => x.CommandDelegate == Commands.RoleCMD);
         }
         base.Dispose(disposing);
@@ -108,7 +109,7 @@ public class RoleSelection : TerrariaPlugin
         {
             ClearAll(plr); //清除所有
             ConfigRole(plr, my); //设置所有
-            plr.SendMessage($"已清空背包使用角色 [c/F86570:{my.Role}]", 170, 170, 170);
+            plr.SendMessage($"已清空背包使用角色 {my.Role}", 170, 170, 170);
         }
         else
         {
@@ -125,7 +126,7 @@ public class RoleSelection : TerrariaPlugin
                 ConfigRole(plr, my);
                 newRole.CopyCharacter(plr);
                 Db.SetAndUpdate(plr, newRole, my.Role);
-                plr.SendMessage($"已添加角色 [c/F74F5D:{my.Role}]", 170, 170, 170);
+                plr.SendMessage($"已添加角色 {my.Role}", 170, 170, 170);
             }
             else
             {
@@ -134,7 +135,7 @@ public class RoleSelection : TerrariaPlugin
                 if (data.Role != my.Role)
                 {
                     data2.RestoreCharacter(plr);
-                    plr.SendMessage($"已更换角色 [c/8BE978:{data2.Role}]", 170, 170, 170);
+                    plr.SendMessage($"已更换角色 {data2.Role}", 170, 170, 170);
                 }
             }
         }
@@ -153,7 +154,35 @@ public class RoleSelection : TerrariaPlugin
         {
             old.CopyCharacter(plr);
             Db.SetAndUpdate(plr, old, data.Role);
-            plr.SendMessage($"已保存角色 [c/5B9DE1:{data.Role}]", 170, 170, 170);
+            plr.SendMessage($"已保存角色 {data.Role}", 170, 170, 170);
+        }
+    }
+    #endregion
+
+    #region 退出服务器则保存角色
+    private void OnServerLeave(LeaveEventArgs args)
+    {
+        var plr = TShock.Players[args.Who];
+        if (!Config.Enabled || !Config.UseDBSave ||
+            !plr.HasPermission("role.use")) return;
+
+        try
+        {
+            var data = Db.GetData(plr.Name); // 获取玩家角色数据
+            if (data == null) return;
+
+            var role = Db.GetRole(plr.Account.ID).FirstOrDefault(r => r.Role == data.Role);
+            if (role != null)
+            {
+                role.CopyCharacter(plr); // 将当前角色数据复制进 RoleData
+                Db.SetAndUpdate(plr, role, data.Role); // 保存到数据库
+                TShock.Log.ConsoleInfo($"[角色选择系统] 已保存 {plr.Name} 的角色 {data.Role}", 170, 170, 170);
+            }
+        }
+        catch (Exception ex)
+        {
+            TShock.Log.ConsoleError($"保存角色数据失败: {ex.Message}");
+            TShock.Log.ConsoleError(ex.StackTrace);
         }
     }
     #endregion
@@ -330,13 +359,13 @@ public class RoleSelection : TerrariaPlugin
                     {
                         plr.SendInfoMessage($"【角色选择系统】当前角色禁止使用这个物品:{Lang.GetItemName(Sel.type)}");
                         plr.TPlayer.inventory[plr.TPlayer.selectedItem].TurnToAir();
-                        NetMessage.SendData(5, -1, -1, null, plr.Index, plr.TPlayer.selectedItem);
+                        NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, plr.Index, plr.TPlayer.selectedItem);
                     }
                     else if (Config.ClearItem == 2)
                     {
                         foreach (var buff in Config.BuffList)
                         {
-                            plr.SetBuff(buff.Key,buff.Value * 60);
+                            NetMessage.SendData((int)PacketTypes.PlayerAddBuff, number: plr.Index, number2: buff.Key, number3: buff.Value * 60);
                         }
                     }
                 }
@@ -399,38 +428,42 @@ public class RoleSelection : TerrariaPlugin
     private void OnChat(ServerChatEventArgs args)
     {
         var plr = TShock.Players[args.Who];
+
+        var text = args.Text;
+
         if (plr == null || !plr.IsLoggedIn || !plr.HasPermission(Permissions.canchat) ||
            !Config.Enabled || !Config.UsePrefix || plr.mute || !plr.HasPermission("role.use"))
         {
             return;
         }
 
-        var data = Db.GetData(plr.Name); //帮玩家建数据方法
-        if (data == null)
-        {
-            data = CreateData(plr);
-        }
-
         //检查命令用的标识
         var flag = false;
 
         // 检查是否为命令
-        if (args.Text.StartsWith(TShock.Config.Settings.CommandSpecifier) || args.Text.StartsWith(TShock.Config.Settings.CommandSilentSpecifier))
+        if (text.StartsWith(TShock.Config.Settings.CommandSpecifier) ||
+            text.StartsWith(TShock.Config.Settings.CommandSilentSpecifier) ||
+            string.IsNullOrWhiteSpace(text))
         {
             flag = true;
         }
 
-        //检查是否使用其他语言包导致指令为空
-        if (string.IsNullOrWhiteSpace(args.Text))
-        {
-            flag = true;
-        }
-
-        //不是命令 则继续
+        //不是命令 则继续  
         if (!flag)
         {
-            string ChatFormat = Config.ChatFormat;
-            TShock.Utils.Broadcast(string.Format(ChatFormat, plr.Group.Name, data.Role, plr.Name, plr.Group.Suffix, args.Text), plr.Group.R, plr.Group.G, plr.Group.B);
+            var data = Db.GetData(plr.Name);
+            if (data == null) return;
+
+            //渐变色角色名称
+            var RoleName = Utils.TextGradient(data.Role);
+
+            text = String.Format(Config.ChatFormat, plr.Group.Name, RoleName, plr.Name, plr.Group.Suffix, args.Text);
+
+            bool cancelChat = PlayerHooks.OnPlayerChat(plr, args.Text, ref text);
+
+            if (cancelChat) return;
+
+            TShock.Utils.Broadcast(text, plr.Group.R, plr.Group.G, plr.Group.B);
         }
 
         args.Handled = !flag;

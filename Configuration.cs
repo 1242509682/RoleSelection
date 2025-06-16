@@ -11,7 +11,7 @@ namespace RoleSelection
         [JsonProperty("使用聊天前缀", Order = 1)]
         public bool UsePrefix { get; set; } = true;
         [JsonProperty("聊天前缀格式", Order = 2)]
-        public string ChatFormat { get; set; } = "[c/70A9CC:<{1}>] {2}:{3} {4}";
+        public string ChatFormat { get; set; } = "☆{1}☆ {2}:{3} {4}";
         [JsonProperty("清理钱币", Order = 3)]
         public bool IsACoin { get; set; } = false;
         [JsonProperty("进服清背包", Order = 4)]
@@ -72,10 +72,10 @@ namespace RoleSelection
         {
             ExemptList = new List<int>() { 71 };
 
-            BuffList = new Dictionary<int, int>() { { 149,5 } };
+            BuffList = new Dictionary<int, int>() { { 149, 5 } };
             MyDataList = new List<MyData>()
             {
-                new MyData() 
+                new MyData()
                 {
                     Role = "萌新",
                     WeaponType = 0,
@@ -197,5 +197,6 @@ namespace RoleSelection
             }
         }
         #endregion
+
     }
 }

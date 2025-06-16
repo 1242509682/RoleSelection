@@ -7,10 +7,29 @@
 ## Update Log
 
 ```
-v1.1.0
-Use the/rl add command to no longer save empty slots to the configuration file
-Added the configuration item 'Display items per line'
-Attempt to repair the skin color of the character
+Version 1.1.1
+Added feature: Automatically saves player role data when leaving the server
+Attempted to fix the issue where punishment buffs could not be applied properly.
+(Note: Punishments only take effect when SSC is enabled and the user does not have role.admin permissions)
+Added gradient-colored role name prefix:
+If a role name contains no [c/, it will automatically be displayed with a gradient color effect
+Supports parsing of:
+[i:itemID] for item icon display
+[c/HEX:] for custom single-character coloring
+Examples:
+宇宙无敌大萌新 — Applies gradient color from the first character to the last
+[i:4952]法师 — Parses item icon, text is colored in a single color
+[c/F66E78:射][c/FC9C71:手] — Applies custom single-character coloring
+[i:4956][c/65A1E0:战][c/64E0D9:士] — Combines item icon parsing and custom single-character coloring
+Removed color formatting codes from command feedback messages to prevent conflicts with title color formatting.
+
+v1.1.0 Fix
+The /rl add command now no longer saves empty inventory slots to the configuration file
+Added new config option: "Items Per Row" (控制每行显示物品数量)
+🧪 New: Attempted to fix character skin color issues
+🧪 New: Fixed issue where /rl add did not accurately retrieve inventory items, and would add currency by mistake
+🧪 New: Fixed issue where running /rl up from the server console would not return any feedback message
+🧪 New: Fixed issue where using /rl cl with empty input would not show a usage example
 
 v1.0.9
 Added chat prefix display for roles and its corresponding configuration option: "Use Chat Prefix"
